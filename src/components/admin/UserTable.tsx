@@ -120,7 +120,7 @@ const UserTable = memo<UserTableProps>(function UserTable({
     };
 
     return (
-      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${colors[status]}`}>
+      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${status ? colors[status] : colors.active}`}>
         {statusConfig.label}
       </span>
     );
@@ -140,7 +140,7 @@ const UserTable = memo<UserTableProps>(function UserTable({
     };
 
     return (
-      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${colors[status]}`}>
+      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${status ? colors[status] : colors.active}`}>
         {membershipConfig.label}
       </span>
     );
@@ -160,7 +160,7 @@ const UserTable = memo<UserTableProps>(function UserTable({
 
     return (
       <div className="flex items-center space-x-2">
-        <div className={`w-3 h-3 rounded-full ${colors[status]}`} />
+        <div className={`w-3 h-3 rounded-full ${status ? colors[status] : colors.gray}`} />
         <span className="text-sm text-gray-600">{trafficConfig.label}</span>
       </div>
     );
@@ -258,7 +258,7 @@ const UserTable = memo<UserTableProps>(function UserTable({
         <div className="space-y-1 text-xs text-gray-500">
           <div className="flex items-center space-x-1">
             <CalendarIcon className="h-3 w-3" />
-            <span>Creado: {new Date(user.created_at).toLocaleDateString('es-ES')}</span>
+            <span>Creado: {user.created_at ? new Date(user.created_at).toLocaleDateString('es-ES') : 'N/A'}</span>
           </div>
           {user.last_activity_date && (
             <div className="flex items-center space-x-1">

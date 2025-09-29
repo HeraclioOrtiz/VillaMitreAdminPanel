@@ -220,7 +220,7 @@ const UserDetail = memo<UserDetailProps>(function UserDetail({
     };
 
     return (
-      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${colors[user.status]}`}>
+      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${user.status ? colors[user.status] : colors.active}`}>
         {statusConfig.label}
       </span>
     );
@@ -239,7 +239,7 @@ const UserDetail = memo<UserDetailProps>(function UserDetail({
 
     return (
       <div className="flex items-center space-x-2">
-        <div className={`w-3 h-3 rounded-full ${colors[user.traffic_light_status]}`} />
+        <div className={`w-3 h-3 rounded-full ${user.traffic_light_status ? colors[user.traffic_light_status] : colors.gray}`} />
         <span className="text-sm text-gray-600">{trafficLightConfig.label}</span>
         <span className="text-xs text-gray-400">({trafficLightConfig.description})</span>
       </div>
@@ -299,7 +299,7 @@ const UserDetail = memo<UserDetailProps>(function UserDetail({
 
                 <div className="flex items-center space-x-2">
                   <CalendarIcon className="h-4 w-4" />
-                  <span>Miembro desde {new Date(user.created_at).toLocaleDateString('es-ES')}</span>
+                  <span>Miembro desde {user.created_at ? new Date(user.created_at).toLocaleDateString('es-ES') : 'N/A'}</span>
                 </div>
               </div>
 
@@ -368,7 +368,7 @@ const UserDetail = memo<UserDetailProps>(function UserDetail({
             />
             <InfoItem 
               label="Última actualización" 
-              value={new Date(user.updated_at).toLocaleDateString('es-ES')} 
+              value={user.updated_at ? new Date(user.updated_at).toLocaleDateString('es-ES') : 'N/A'} 
             />
           </div>
         </div>
