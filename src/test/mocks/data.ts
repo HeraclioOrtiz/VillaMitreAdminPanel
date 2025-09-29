@@ -1,0 +1,212 @@
+import type { User } from '@/types/user';
+import type { Exercise } from '@/types/exercise';
+import type { DailyTemplate } from '@/types/template';
+
+export const mockUsers: User[] = [
+  {
+    id: 1,
+    first_name: 'Juan',
+    last_name: 'Pérez',
+    email: 'juan@test.com',
+    phone: '+54 9 11 1234-5678',
+    dni: '12345678',
+    birth_date: '1990-05-15',
+    gender: 'male',
+    address: 'Av. Corrientes 1234, CABA',
+    role: 'member',
+    is_super_admin: false,
+    is_admin: false,
+    is_professor: false,
+    is_member: true,
+    status: 'active',
+    membership_status: 'active',
+    traffic_light_status: 'green',
+    email_verified_at: '2024-01-01T10:00:00Z',
+    phone_verified_at: '2024-01-01T10:00:00Z',
+    emergency_contact_name: 'Ana Pérez',
+    emergency_contact_phone: '+54 9 11 9999-8888',
+    medical_notes: undefined,
+    assigned_professor_id: 2,
+    assigned_professor: {
+      id: 2,
+      first_name: 'María',
+      last_name: 'García',
+      email: 'maria@villamitre.com',
+      role: 'professor',
+      is_super_admin: false,
+      is_admin: false,
+      is_professor: true,
+      is_member: false,
+      status: 'active',
+      membership_status: 'cancelled',
+      traffic_light_status: 'green',
+      created_at: '2024-01-01T10:00:00Z',
+      updated_at: '2024-01-22T09:15:00Z'
+    },
+    last_activity_date: '2024-01-20',
+    created_at: '2024-01-01T10:00:00Z',
+    updated_at: '2024-01-20T15:30:00Z'
+  },
+  {
+    id: 2,
+    first_name: 'María',
+    last_name: 'García',
+    email: 'maria@villamitre.com',
+    phone: '+54 9 11 9876-5432',
+    dni: '87654321',
+    birth_date: '1985-08-22',
+    gender: 'female',
+    address: 'Av. Santa Fe 5678, CABA',
+    role: 'professor',
+    is_super_admin: false,
+    is_admin: false,
+    is_professor: true,
+    is_member: false,
+    status: 'active',
+    membership_status: 'cancelled',
+    traffic_light_status: 'green',
+    email_verified_at: '2024-01-01T10:00:00Z',
+    phone_verified_at: '2024-01-01T10:00:00Z',
+    emergency_contact_name: 'Pedro García',
+    emergency_contact_phone: '+54 9 11 8888-7777',
+    medical_notes: undefined,
+    last_activity_date: '2024-01-22',
+    created_at: '2024-01-01T10:00:00Z',
+    updated_at: '2024-01-22T09:15:00Z'
+  },
+  {
+    id: 3,
+    first_name: 'Carlos',
+    last_name: 'López',
+    email: 'carlos@test.com',
+    phone: '+54 9 11 5555-1234',
+    dni: '11223344',
+    birth_date: '1992-12-10',
+    gender: 'male',
+    address: 'Av. Rivadavia 9876, CABA',
+    role: 'member',
+    is_super_admin: false,
+    is_admin: false,
+    is_professor: false,
+    is_member: true,
+    status: 'active',
+    membership_status: 'active',
+    traffic_light_status: 'yellow',
+    email_verified_at: '2024-01-15T10:00:00Z',
+    phone_verified_at: undefined,
+    emergency_contact_name: undefined,
+    emergency_contact_phone: undefined,
+    medical_notes: 'Alergia a ciertos medicamentos',
+    assigned_professor_id: 2,
+    assigned_professor: {
+      id: 2,
+      first_name: 'María',
+      last_name: 'García',
+      email: 'maria@villamitre.com',
+      role: 'professor',
+      is_super_admin: false,
+      is_admin: false,
+      is_professor: true,
+      is_member: false,
+      status: 'active',
+      membership_status: 'cancelled',
+      traffic_light_status: 'green',
+      created_at: '2024-01-01T10:00:00Z',
+      updated_at: '2024-01-22T09:15:00Z'
+    },
+    last_activity_date: '2024-01-18',
+    created_at: '2024-01-15T10:00:00Z',
+    updated_at: '2024-01-18T14:20:00Z'
+  }
+];
+
+export const mockExercises: Exercise[] = [
+  {
+    id: 1,
+    name: 'Press de Banca',
+    description: 'Ejercicio básico para el desarrollo del pecho',
+    instructions: 'Acuéstate en el banco, agarra la barra con las manos separadas...',
+    muscle_group: ['chest'],
+    equipment: ['barbell'],
+    difficulty: 'intermediate',
+    estimated_duration: 15,
+    popularity: 95,
+    tags: ['fuerza', 'pecho', 'básico'],
+    tips: 'Mantén los pies firmes en el suelo. Controla el descenso.',
+    variations: ['Press inclinado', 'Press declinado'],
+    created_at: '2024-01-01T10:00:00Z',
+    updated_at: '2024-01-01T10:00:00Z'
+  },
+  {
+    id: 2,
+    name: 'Sentadillas',
+    description: 'Ejercicio fundamental para piernas y glúteos',
+    instructions: 'Coloca los pies separados al ancho de hombros...',
+    muscle_group: ['legs'],
+    equipment: ['bodyweight'],
+    difficulty: 'beginner',
+    estimated_duration: 10,
+    popularity: 98,
+    tags: ['piernas', 'glúteos', 'funcional'],
+    tips: 'Mantén la espalda recta. Baja hasta que los muslos estén paralelos.',
+    variations: ['Sentadillas con peso', 'Sentadillas búlgaras'],
+    created_at: '2024-01-01T10:00:00Z',
+    updated_at: '2024-01-01T10:00:00Z'
+  },
+  {
+    id: 3,
+    name: 'Dominadas',
+    description: 'Ejercicio para el desarrollo de la espalda y bíceps',
+    instructions: 'Cuelga de la barra con las palmas hacia adelante...',
+    muscle_group: ['back'],
+    equipment: ['pull_up_bar'],
+    difficulty: 'advanced',
+    estimated_duration: 12,
+    popularity: 87,
+    tags: ['espalda', 'bíceps', 'peso corporal'],
+    tips: 'Inicia el movimiento con los dorsales. Controla el descenso.',
+    variations: ['Dominadas supinas', 'Dominadas neutras'],
+    created_at: '2024-01-01T10:00:00Z',
+    updated_at: '2024-01-01T10:00:00Z'
+  }
+];
+
+export const mockTemplates: DailyTemplate[] = [
+  {
+    id: 1,
+    name: 'Rutina de Pecho y Tríceps',
+    description: 'Entrenamiento enfocado en el desarrollo del pecho y tríceps',
+    difficulty: 'intermediate',
+    estimated_duration: 60,
+    primary_goal: 'strength',
+    secondary_goals: ['hypertrophy'],
+    target_muscle_groups: ['chest', 'triceps'],
+    equipment_needed: ['barbell', 'dumbbells', 'bench'],
+    intensity_level: 'moderate',
+    is_public: true,
+    is_favorite: false,
+    usage_count: 15,
+    tags: ['pecho', 'tríceps', 'fuerza'],
+    exercises: [
+      {
+        id: 1,
+        exercise_id: 1,
+        order: 1,
+        sets: [
+          {
+            id: '1',
+            reps: 8,
+            weight: 80,
+            rest_time: 120,
+            rpe: 8,
+            tempo: '2-1-2-1',
+            notes: 'Serie de calentamiento'
+          }
+        ]
+      }
+    ],
+    created_by: 2,
+    created_at: '2024-01-01T10:00:00Z',
+    updated_at: '2024-01-01T10:00:00Z'
+  }
+];
