@@ -86,17 +86,6 @@ const TemplateGrid = memo<TemplateGridProps>(function TemplateGrid({
     per_page: 50,
   });
 
-  // Debug para comparar con modal
-  console.log('🏠 LISTA - Plantillas cargadas:', {
-    loading: isLoading,
-    error: error,
-    totalTemplates: Array.isArray(templatesData) ? templatesData.length : templatesData?.data?.length || 0,
-    responseType: Array.isArray(templatesData) ? 'array' : 'object',
-    endpoint: '/admin/gym/daily-templates',
-    params: { ...filters, per_page: 50 }
-  });
-
-  // Debug básico
   // Process templates data
   const templates = Array.isArray(templatesData) ? templatesData : (templatesData?.data || []);
   const meta = templatesData?.meta;

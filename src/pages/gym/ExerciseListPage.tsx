@@ -21,8 +21,6 @@ import {
 } from '@heroicons/react/24/outline';
 
 const ExerciseListPage = () => {
-  console.log('🚀 ExerciseListPage - Component is rendering');
-  
   const navigate = useNavigate();
   const toast = useToast();
   
@@ -51,37 +49,16 @@ const ExerciseListPage = () => {
   });
 
   // Preparar parámetros para la query
-  const queryParams = useMemo(() => {
-    const params = {
-      ...pagination,
-      ...filters,
-      sort_by: sortConfig?.key as 'name' | 'created_at' | 'popularity' | undefined,
-      sort_direction: sortConfig?.direction,
-    };
-    console.log('ExerciseListPage - queryParams calculated:', params);
-    return params;
-  }, [pagination, filters, sortConfig]);
+  const queryParams = useMemo(() => ({
+    ...pagination,
+    ...filters,
+    sort_by: sortConfig?.key as 'name' | 'created_at' | 'popularity' | undefined,
+    sort_direction: sortConfig?.direction,
+  }), [pagination, filters, sortConfig]);
 
   // Hooks de React Query
   const queryResult = useExercises(queryParams);
-  const { data: exercisesData, isLoading, error, isFetching, status, fetchStatus } = queryResult;
-  
-  // Debug logging completo
-  console.log('🚨 QUERY DEBUG - queryParams:', queryParams);
-  console.log('🚨 QUERY DEBUG - queryResult:', queryResult);
-  console.log('🚨 QUERY DEBUG - exercisesData:', exercisesData);
-  console.log('🚨 QUERY DEBUG - isLoading:', isLoading);
-  console.log('🚨 QUERY DEBUG - isFetching:', isFetching);
-  console.log('🚨 QUERY DEBUG - status:', status);
-  console.log('🚨 QUERY DEBUG - fetchStatus:', fetchStatus);
-  console.log('🚨 QUERY DEBUG - error:', error);
-  
-  // Verificar si React Query está configurado
-  console.log('🚨 REACT QUERY DEBUG - QueryClient exists:', !!queryResult);
-  
-  // Debug de API
-  console.log('🚨 API DEBUG - VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
-  console.log('🚨 API DEBUG - auth_token exists:', !!localStorage.getItem('auth_token'));
+  const { data: exercisesData, isLoading, error } = queryResult;
   
   // TODOS LOS HOOKS DEBEN IR ANTES DE CUALQUIER RETURN
   const bulkDeleteMutation = useBulkDeleteExercises({
@@ -347,10 +324,6 @@ const ExerciseListPage = () => {
     });
   };
 
-  // TEMPORAL: Debug simple
-  console.log('🚨 FINAL DEBUG - exercisesData:', exercisesData);
-  console.log('🚨 FINAL DEBUG - has data:', exercisesData && exercisesData.data && exercisesData.data.length > 0);
-
   // Loading state
   if (isLoading) {
     return <ListPageSkeleton />;
@@ -381,40 +354,8 @@ const ExerciseListPage = () => {
   }
 
   // Extraer datos de forma segura
-  // Debug para verificar la estructura real
-  console.log('🔍 Data structure check:', {
-    exercisesData: exercisesData,
-    isArray: Array.isArray(exercisesData),
-    hasDataProperty: exercisesData && 'data' in exercisesData,
-    directLength: Array.isArray(exercisesData) ? exercisesData.length : 'not array',
-    dataPropertyLength: exercisesData?.data?.length || 'no data property'
-  });
-  
-  // Extraer ejercicios según la estructura real
   const exercises = Array.isArray(exercisesData) ? exercisesData : (exercisesData?.data || []);
   const hasExercises = exercises.length > 0;
-  
-  // Debug logs simplificados
-  console.log('📊 ExerciseListPage - Data loaded:', {
-    hasData: !!exercisesData,
-    exerciseCount: exercises.length,
-    isLoading,
-    error: !!error,
-    exercises: exercises.slice(0, 2), // Solo primeros 2 para debug
-    pagination: exercisesData && !Array.isArray(exercisesData) ? {
-      current: exercisesData.current_page || 1,
-      pageSize: exercisesData.per_page || 20,
-      total: exercisesData.total || 0,
-    } : undefined
-  });
-
-  // Debug específico para renderizado de tabla
-  console.log('🎯 ExerciseTable - Props que se van a pasar:', {
-    exercisesLength: exercises.length,
-    loading: isLoading,
-    hasExercises: exercises.length > 0,
-    shouldRenderTable: !isLoading && !error && exercises.length > 0
-  });
   
   // Mostrar empty state solo si no hay loading, no hay error y no hay ejercicios
   if (!isLoading && !error && !hasExercises) {
@@ -475,7 +416,7 @@ const ExerciseListPage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full">
       {/* Header */}
       <div className="md:flex md:items-center md:justify-between">
         <div className="flex-1 min-w-0">
@@ -557,7 +498,7 @@ const ExerciseListPage = () => {
       )}
 
       {/* Tabla de ejercicios */}
-      <div className="bg-white shadow rounded-lg">
+      <div className="w-full overflow-x-auto">
         <ExerciseTable
           exercises={exercises}
           loading={isLoading}

@@ -12,10 +12,12 @@ import {
   EQUIPMENT_TYPES,
   MOVEMENT_PATTERNS,
   DIFFICULTY_LEVELS,
+  EXERCISE_TYPES,
   type MuscleGroup,
   type EquipmentType,
   type MovementPattern,
   type DifficultyLevel,
+  type ExerciseType,
 } from '@/types/exercise';
 import {
   PhotoIcon,
@@ -23,24 +25,34 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 
-// Schema de validación con Zod
+// Schema de validación con Zod - ACTUALIZADO 2025-10-06
 const exerciseSchema = z.object({
   name: z
     .string()
     .min(3, 'El nombre debe tener al menos 3 caracteres')
     .max(100, 'El nombre no puede exceder 100 caracteres'),
-  muscle_group: z
-    .string()
-    .min(1, 'Selecciona al menos un grupo muscular'),
+  // ACTUALIZADO: target_muscle_groups es array
+  target_muscle_groups: z
+    .array(z.string())
+    .min(1, 'Selecciona al menos un grupo muscular')
+    .max(5, 'Máximo 5 grupos musculares permitidos'),
   movement_pattern: z
     .string()
-    .min(1, 'Selecciona un patrón de movimiento'),
+    .min(1, 'Selecciona un patrón de movimiento')
+    .optional(),
+  // ACTUALIZADO: equipment es array
   equipment: z
-    .string()
-    .min(1, 'Selecciona al menos un equipamiento'),
-  difficulty: z
+    .array(z.string())
+    .min(1, 'Selecciona al menos un equipamiento')
+    .max(10, 'Máximo 10 equipamientos permitidos'),
+  // ACTUALIZADO: difficulty_level
+  difficulty_level: z
     .enum(['beginner', 'intermediate', 'advanced'])
     .refine((val) => val !== undefined, 'Selecciona la dificultad'),
+  // NUEVO: exercise_type
+  exercise_type: z
+    .enum(['strength', 'cardio', 'flexibility', 'balance'])
+    .refine((val) => val !== undefined, 'Selecciona el tipo de ejercicio'),
   tags: z
     .array(z.string())
     .min(1, 'Agrega al menos un tag')
@@ -104,10 +116,18 @@ const ExerciseForm = ({
     resolver: zodResolver(exerciseSchema),
     defaultValues: {
       name: initialData?.name || '',
-      muscle_group: initialData?.muscle_group || '',
+      // ACTUALIZADO: target_muscle_groups como array
+      target_muscle_groups: initialData?.target_muscle_groups || 
+        (initialData?.muscle_group ? [initialData.muscle_group] : []),
       movement_pattern: initialData?.movement_pattern || '',
-      equipment: initialData?.equipment || '',
-      difficulty: initialData?.difficulty || 'beginner',
+      // ACTUALIZADO: equipment como array
+      equipment: Array.isArray(initialData?.equipment) 
+        ? initialData.equipment 
+        : (initialData?.equipment ? [initialData.equipment as string] : []),
+      // ACTUALIZADO: difficulty_level
+      difficulty_level: (initialData?.difficulty_level || initialData?.difficulty || 'beginner') as DifficultyLevel,
+      // NUEVO: exercise_type
+      exercise_type: initialData?.exercise_type || 'strength',
       tags: initialData?.tags || [],
       instructions: initialData?.instructions || '',
       tempo: initialData?.tempo || '',
@@ -117,26 +137,10 @@ const ExerciseForm = ({
     mode: 'onChange',
   });
 
-  // Debug: Log form state for debugging
-  React.useEffect(() => {
-    console.log('Form validation state:', {
-      isValid,
-      errors,
-      values: {
-        name: watch('name'),
-        muscle_group: watch('muscle_group'),
-        movement_pattern: watch('movement_pattern'),
-        equipment: watch('equipment'),
-        difficulty: watch('difficulty'),
-        tags: watch('tags'),
-        instructions: watch('instructions'),
-      }
-    });
-  }, [isValid, errors, watch]);
 
   // Watch para valores reactivos
   const watchedTags = watch('tags');
-  const watchedMuscleGroup = watch('muscle_group');
+  const watchedTargetMuscleGroups = watch('target_muscle_groups');
   const watchedEquipment = watch('equipment');
   const watchedVideoUrl = watch('video_url');
   const watchedImageUrl = watch('image_url');
@@ -221,12 +225,8 @@ const ExerciseForm = ({
   // Manejar envío del formulario
   const handleFormSubmit = async (data: ExerciseFormData) => {
     try {
-      console.log('ExerciseForm - handleFormSubmit called with:', data);
       await onSubmit(data);
-      console.log('ExerciseForm - onSubmit completed successfully');
     } catch (error) {
-      console.error('ExerciseForm - Error submitting form:', error);
-      // Re-lanzar el error para que React Hook Form lo maneje
       throw error;
     }
   };
@@ -234,10 +234,13 @@ const ExerciseForm = ({
   return (
     <form onSubmit={handleSubmit(handleFormSubmit as any)} className="space-y-6">
       {/* Información básica */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Información Básica
-        </h3>
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">
+            📝 Información Básica
+          </h3>
+        </div>
+        <div className="p-6">
         
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <FormField
@@ -254,12 +257,13 @@ const ExerciseForm = ({
           </FormField>
 
           <FormField
-            label="Grupo Muscular"
+            label="Grupos Musculares"
             required
-            error={errors.muscle_group?.message}
+            error={errors.target_muscle_groups?.message}
+            helperText="Selecciona hasta 5 grupos musculares"
           >
             <Controller
-              name="muscle_group"
+              name="target_muscle_groups"
               control={control}
               render={({ field }) => (
                 <MultiSelect
@@ -267,10 +271,10 @@ const ExerciseForm = ({
                     value: group,
                     label: getMuscleGroupLabel(group),
                   }))}
-                  value={typeof field.value === 'string' ? field.value.split(',').map(s => s.trim()).filter(Boolean) : (field.value || [])}
-                  onChange={(values) => field.onChange(values.join(', '))}
+                  value={field.value || []}
+                  onChange={(values) => field.onChange(values)}
                   placeholder="Seleccionar grupos musculares"
-                  className={errors.muscle_group ? 'border-red-300' : ''}
+                  className={errors.target_muscle_groups ? 'border-red-300' : ''}
                 />
               )}
             />
@@ -298,6 +302,7 @@ const ExerciseForm = ({
             label="Equipamiento"
             required
             error={errors.equipment?.message}
+            helperText="Selecciona hasta 10 equipamientos"
           >
             <Controller
               name="equipment"
@@ -308,8 +313,8 @@ const ExerciseForm = ({
                     value: equipment,
                     label: getEquipmentLabel(equipment),
                   }))}
-                  value={typeof field.value === 'string' ? field.value.split(',').map(s => s.trim()).filter(Boolean) : (field.value || [])}
-                  onChange={(values) => field.onChange(values.join(', '))}
+                  value={field.value || []}
+                  onChange={(values) => field.onChange(values)}
                   placeholder="Seleccionar equipamiento"
                   className={errors.equipment ? 'border-red-300' : ''}
                 />
@@ -320,12 +325,13 @@ const ExerciseForm = ({
           <FormField
             label="Dificultad"
             required
-            error={errors.difficulty?.message}
+            error={errors.difficulty_level?.message}
           >
             <FormSelect
-              {...register('difficulty')}
-              error={!!errors.difficulty}
+              {...register('difficulty_level')}
+              error={!!errors.difficulty_level}
             >
+              <option value="">Seleccionar dificultad</option>
               {DIFFICULTY_LEVELS.map((difficulty) => (
                 <option key={difficulty} value={difficulty}>
                   {getDifficultyLabel(difficulty)}
@@ -333,12 +339,35 @@ const ExerciseForm = ({
               ))}
             </FormSelect>
           </FormField>
+
+          <FormField
+            label="Tipo de Ejercicio"
+            required
+            error={errors.exercise_type?.message}
+          >
+            <FormSelect
+              {...register('exercise_type')}
+              error={!!errors.exercise_type}
+            >
+              <option value="">Seleccionar tipo</option>
+              <option value="strength">Fuerza</option>
+              <option value="cardio">Cardio</option>
+              <option value="flexibility">Flexibilidad</option>
+              <option value="balance">Balance</option>
+            </FormSelect>
+          </FormField>
+        </div>
         </div>
       </div>
 
       {/* Tags */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Tags</h3>
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">
+            🏷️ Tags y Categorización
+          </h3>
+        </div>
+        <div className="p-6">
         
         <FormField
           label="Agregar Tags"
@@ -375,14 +404,17 @@ const ExerciseForm = ({
             ))}
           </div>
         )}
+        </div>
       </div>
 
       {/* Instrucciones */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Instrucciones y Detalles
-        </h3>
-
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">
+            📋 Instrucciones y Detalles
+          </h3>
+        </div>
+        <div className="p-6">
         <div className="space-y-6">
           <FormField
             label="Instrucciones de Ejecución"
@@ -410,14 +442,17 @@ const ExerciseForm = ({
             />
           </FormField>
         </div>
+        </div>
       </div>
 
       {/* Multimedia */}
-      <div className="bg-white p-6 rounded-lg border border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">
-          Multimedia (Opcional)
-        </h3>
-
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">
+            🎬 Multimedia (Opcional)
+          </h3>
+        </div>
+        <div className="p-6">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <FormField
             label="URL de Video"
@@ -486,37 +521,25 @@ const ExerciseForm = ({
             </div>
           )}
         </div>
+        </div>
       </div>
 
-      {/* Debug info - Solo en desarrollo */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <h4 className="text-sm font-medium text-gray-900 mb-2">Debug Info:</h4>
-          <div className="text-xs text-gray-600 space-y-1">
-            <div>Form Valid: {isValid ? '✅' : '❌'}</div>
-            <div>Loading: {isLoading ? '⏳' : '✅'}</div>
-            {Object.keys(errors).length > 0 && (
-              <div>
-                <div className="font-medium text-red-600">Errores:</div>
-                {Object.entries(errors).map(([field, error]) => (
-                  <div key={field} className="ml-2 text-red-500">
-                    • {field}: {error?.message}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Botones de acción */}
-      <div className="flex items-center justify-end space-x-4 pt-6 border-t border-gray-200">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        <div className="flex items-center justify-between">
+        <div className="text-sm text-gray-600">
+          {!isValid && Object.keys(errors).length > 0 && (
+            <span className="text-red-600">⚠️ Completa todos los campos requeridos</span>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
         {onCancel && (
           <Button
             type="button"
             variant="secondary"
             onClick={onCancel}
             disabled={isLoading}
+            className="px-6"
           >
             Cancelar
           </Button>
@@ -527,10 +550,13 @@ const ExerciseForm = ({
           variant="primary"
           disabled={!isValid || isLoading}
           isLoading={isLoading}
+          className="px-8"
           title={!isValid ? 'Completa todos los campos requeridos' : ''}
         >
-          {mode === 'create' ? 'Crear Ejercicio' : 'Guardar Cambios'}
+          {mode === 'create' ? '✨ Crear Ejercicio' : '💾 Guardar Cambios'}
         </Button>
+        </div>
+        </div>
       </div>
     </form>
   );

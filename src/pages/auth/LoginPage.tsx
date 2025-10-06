@@ -18,10 +18,21 @@ export default function LoginPage() {
     setError('');
 
     try {
+      console.log('🔐 Attempting login with:', { dni: credentials.dni });
       await login(credentials);
+      console.log('✅ Login successful, redirecting to dashboard');
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Error al iniciar sesión');
+      console.error('❌ Login error:', err);
+      console.error('  Error response:', err.response);
+      console.error('  Error data:', err.response?.data);
+      console.error('  Error message:', err.message);
+      
+      const errorMessage = err.response?.data?.message || 
+                          err.response?.data?.error || 
+                          err.message || 
+                          'Error al iniciar sesión. Por favor verifica tus credenciales.';
+      setError(errorMessage);
     }
   };
 

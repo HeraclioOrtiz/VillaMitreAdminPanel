@@ -30,13 +30,18 @@ const SetEditor = ({
     const newSet: SetConfiguration = {
       id: `set-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       reps: 12,
-      weight: undefined,
+      // CAMPOS DE PESO AGREGADOS SEGÚN BACKEND 2025-10-06
+      weight_min: undefined,
+      weight_max: undefined,
+      weight_target: undefined,
+      weight: undefined, // Mantenido para compatibilidad legacy
       duration: undefined,
       distance: undefined,
       rest_time: 60,
       notes: '',
       rpe: undefined,
-      tempo: '',
+      // CAMPO REMOVIDO: tempo ya no se usa en sets
+      // tempo: '', // ELIMINADO según backend 2025-10-06
     };
 
     onSetsChange([...sets, newSet]);
@@ -199,14 +204,14 @@ const SetEditor = ({
                   </FormField>
                 </div>
 
-                {/* Peso */}
+                {/* Peso Objetivo - NUEVO CAMPO SEGÚN BACKEND 2025-10-06 */}
                 <div>
-                  <FormField label="Peso (kg)">
+                  <FormField label="Peso Objetivo (kg)" helperText="Peso recomendado">
                     <div className="relative">
                       <input
                         type="number"
-                        value={set.weight || ''}
-                        onChange={(e) => updateSet(set.id!, { weight: parseFloat(e.target.value) || undefined })}
+                        value={set.weight_target || ''}
+                        onChange={(e) => updateSet(set.id!, { weight_target: parseFloat(e.target.value) || undefined })}
                         placeholder="20"
                         min="0"
                         step="0.5"
@@ -216,7 +221,7 @@ const SetEditor = ({
                       {sets.length > 1 && (
                         <button
                           type="button"
-                          onClick={() => copyToAllSets(set.id!, 'weight')}
+                          onClick={() => copyToAllSets(set.id!, 'weight_target')}
                           disabled={disabled}
                           className="absolute right-1 top-1 p-1 text-xs text-gray-400 hover:text-gray-600 disabled:opacity-50"
                           title="Copiar a todas las series"
@@ -224,6 +229,60 @@ const SetEditor = ({
                           ↓
                         </button>
                       )}
+                    </div>
+                  </FormField>
+                </div>
+
+                {/* Rango de Peso - NUEVOS CAMPOS SEGÚN BACKEND 2025-10-06 */}
+                <div className="col-span-2">
+                  <FormField label="Rango de Peso (kg)" helperText="Peso mínimo y máximo recomendado">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={set.weight_min || ''}
+                          onChange={(e) => updateSet(set.id!, { weight_min: parseFloat(e.target.value) || undefined })}
+                          placeholder="Mín"
+                          min="0"
+                          step="0.5"
+                          disabled={disabled}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-villa-mitre-500 focus:border-villa-mitre-500 disabled:bg-gray-100"
+                        />
+                        {sets.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => copyToAllSets(set.id!, 'weight_min')}
+                            disabled={disabled}
+                            className="absolute right-1 top-1 p-1 text-xs text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                            title="Copiar a todas las series"
+                          >
+                            ↓
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={set.weight_max || ''}
+                          onChange={(e) => updateSet(set.id!, { weight_max: parseFloat(e.target.value) || undefined })}
+                          placeholder="Máx"
+                          min="0"
+                          step="0.5"
+                          disabled={disabled}
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-villa-mitre-500 focus:border-villa-mitre-500 disabled:bg-gray-100"
+                        />
+                        {sets.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => copyToAllSets(set.id!, 'weight_max')}
+                            disabled={disabled}
+                            className="absolute right-1 top-1 p-1 text-xs text-gray-400 hover:text-gray-600 disabled:opacity-50"
+                            title="Copiar a todas las series"
+                          >
+                            ↓
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </FormField>
                 </div>
@@ -307,7 +366,8 @@ const SetEditor = ({
                     </FormField>
                   </div>
 
-                  {/* Tempo */}
+                  {/* CAMPO REMOVIDO: Tempo ya no se usa en sets según backend 2025-10-06 */}
+                  {/* 
                   <div>
                     <FormField label="Tempo" helperText="Ej: 2-1-2-1">
                       <input
@@ -320,6 +380,7 @@ const SetEditor = ({
                       />
                     </FormField>
                   </div>
+                  */}
 
                   {/* Distancia */}
                   <div>
@@ -385,10 +446,12 @@ const SetEditor = ({
             <p className="font-medium mb-1">Configuración de Series:</p>
             <ul className="list-disc list-inside space-y-0.5 text-xs">
               <li><strong>Reps:</strong> Número de repeticiones por serie</li>
-              <li><strong>Peso:</strong> Carga en kilogramos (opcional)</li>
-              <li><strong>Duración:</strong> Tiempo en segundos para ejercicios isométricos</li>
-              <li><strong>RPE:</strong> Esfuerzo percibido del 1 al 10</li>
-              <li><strong>Tempo:</strong> Ritmo de ejecución (excéntrico-pausa-concéntrico-pausa)</li>
+              <li><strong>Peso Objetivo:</strong> Carga recomendada en kilogramos</li>
+              <li><strong>Rango de Peso:</strong> Peso mínimo y máximo permitido (útil para progresiones)</li>
+              <li><strong>Duración:</strong> Tiempo en segundos para ejercicios isométricos o cardio</li>
+              <li><strong>Descanso:</strong> Tiempo de recuperación entre series</li>
+              <li><strong>RPE:</strong> Esfuerzo percibido del 1 al 10 (Rate of Perceived Exertion)</li>
+              <li><strong>Distancia:</strong> Para ejercicios de cardio en metros</li>
             </ul>
           </div>
         </div>

@@ -6,6 +6,63 @@ import type {
   ExerciseQueryParams,
 } from '@/types/exercise';
 
+/**
+ * Transforma datos de ejercicio del backend para compatibilidad
+ * Maneja la transición de strings a arrays según cambios 2025-10-06
+ */
+function transformExerciseData(exercise: any): Exercise {
+  return {
+    ...exercise,
+    // Asegurar que los campos sean arrays
+    target_muscle_groups: Array.isArray(exercise.target_muscle_groups) 
+      ? exercise.target_muscle_groups 
+      : (exercise.muscle_group ? [exercise.muscle_group] : []),
+    equipment: Array.isArray(exercise.equipment) 
+      ? exercise.equipment 
+      : (exercise.equipment ? [exercise.equipment] : []),
+    tags: Array.isArray(exercise.tags) 
+      ? exercise.tags 
+      : (exercise.tags ? [exercise.tags] : []),
+    // Mapear campos legacy para compatibilidad
+    muscle_group: exercise.muscle_group || (exercise.target_muscle_groups?.[0]),
+    difficulty: exercise.difficulty || exercise.difficulty_level,
+    // Asegurar enums correctos
+    difficulty_level: exercise.difficulty_level || exercise.difficulty || 'beginner',
+    exercise_type: exercise.exercise_type || 'strength',
+  };
+}
+
+/**
+ * Transforma datos de formulario para envío al backend
+ * El backend espera arrays para target_muscle_groups, muscle_groups y tags
+ */
+function transformFormDataForBackend(formData: ExerciseFormData): any {
+  // Asegurar que los arrays sean arrays, no strings
+  const ensureArray = (value: any): string[] => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string' && value) return [value];
+    return [];
+  };
+
+  return {
+    name: formData.name,
+    description: formData.description || '',
+    // ✅ Arrays requeridos por el backend
+    target_muscle_groups: ensureArray(formData.target_muscle_groups),
+    muscle_groups: ensureArray(formData.target_muscle_groups), // Duplicado para compatibilidad
+    tags: ensureArray(formData.tags),
+    // Strings simples
+    movement_pattern: formData.movement_pattern || '',
+    equipment: formData.equipment?.[0] || formData.equipment || '', // El backend espera string
+    difficulty_level: formData.difficulty_level || 'beginner',
+    exercise_type: formData.exercise_type || 'strength',
+    instructions: formData.instructions || '',
+    tempo: formData.tempo || '',
+    video_url: formData.video_url || '',
+    image_url: formData.image_url || '',
+  };
+}
+
 const EXERCISE_ENDPOINTS = {
   list: '/admin/gym/exercises',
   create: '/admin/gym/exercises',
@@ -36,13 +93,18 @@ export const exerciseService = {
         },
       });
       
-      console.log('getExercises - response:', response);
-      console.log('getExercises - response.data:', response.data);
-      console.log('getExercises - typeof response.data:', typeof response.data);
+      // El backend devuelve directamente la estructura de paginación
+      // response es de tipo ApiResponse pero contiene ExerciseListResponse dentro
+      const paginationData = response as unknown as ExerciseListResponse;
       
-      return response.data;
+      // Transformar datos para compatibilidad con cambios backend 2025-10-06
+      const transformedData: ExerciseListResponse = {
+        ...paginationData,
+        data: paginationData.data.map(transformExerciseData)
+      };
+      
+      return transformedData;
     } catch (error) {
-      console.error('Error fetching exercises:', error);
       throw new Error('Error al cargar los ejercicios');
     }
   },
@@ -53,12 +115,11 @@ export const exerciseService = {
   async getExercise(id: number): Promise<Exercise> {
     try {
       const response = await apiClient.get(EXERCISE_ENDPOINTS.show(id));
-      console.log('Get exercise response:', response.data);
       
-      // Verificar si viene en un wrapper o directamente
-      return response.data.exercise || response.data;
+      // Verificar si viene en un wrapper o directamente y transformar
+      const rawExercise = response.data.exercise || response.data;
+      return transformExerciseData(rawExercise);
     } catch (error) {
-      console.error('Error fetching exercise:', error);
       throw new Error('Error al cargar el ejercicio');
     }
   },
@@ -68,69 +129,17 @@ export const exerciseService = {
    */
   async createExercise(data: ExerciseFormData): Promise<Exercise> {
     try {
-      // Transformar datos según lo que espera el backend
-      const transformedData = {
-        ...data,
-        muscle_group: Array.isArray(data.muscle_group) ? data.muscle_group.join(',') : data.muscle_group,
-        equipment: Array.isArray(data.equipment) ? data.equipment.join(',') : data.equipment,
-        tags: data.tags, // tags debe permanecer como array
-      };
-      
-      console.log('Sending exercise data:', transformedData);
+      const transformedData = transformFormDataForBackend(data);
       const responseData = await apiClient.post(EXERCISE_ENDPOINTS.create, transformedData);
-      console.log('Create exercise responseData:', responseData);
-      console.log('ResponseData type:', typeof responseData);
       
-      // El apiClient devuelve response.data, que puede ser ApiResponse<Exercise> o directamente Exercise
-      // Verificar que la respuesta exista
-      if (!responseData) {
-        console.error('No response data from server');
-        throw new Error('No se recibió respuesta del servidor');
-      }
-      
-      // Verificar si la respuesta tiene estructura ApiResponse o es directamente el ejercicio
-      let exercise: any;
-      const responseAsAny = responseData as any;
-      
-      if (responseAsAny.data && typeof responseAsAny.data === 'object') {
-        // Estructura ApiResponse<Exercise>
-        exercise = responseAsAny.data;
-        console.log('Using responseData.data as exercise:', exercise);
-      } else if (responseAsAny.id) {
-        // Directamente el ejercicio
-        exercise = responseAsAny;
-        console.log('Using responseData directly as exercise:', exercise);
-      } else {
-        console.error('Invalid response structure:', responseData);
-        throw new Error('Estructura de respuesta inválida del servidor');
-      }
-      
-      console.log('Exercise object:', exercise);
-      console.log('Exercise type:', typeof exercise);
-      
-      // Validar que el ejercicio tenga los campos requeridos
-      if (!exercise || typeof exercise !== 'object') {
-        console.error('Invalid exercise object:', exercise);
-        throw new Error('Objeto de ejercicio inválido');
-      }
-      
-      if (!exercise.id || !exercise.name) {
-        console.error('Exercise missing required fields:', { id: exercise.id, name: exercise.name });
-        throw new Error('El ejercicio creado no tiene los campos requeridos');
-      }
-      
-      console.log('Exercise validation passed, returning:', exercise);
-      return exercise;
+      // Extraer ejercicio de la respuesta y transformar
+      const rawExercise = responseData.data || responseData;
+      return transformExerciseData(rawExercise);
     } catch (error: any) {
-      console.error('Error creating exercise:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
-      
       if (error.response?.status === 422) {
         const validationErrors = error.response.data?.errors || error.response.data?.message;
         throw new Error(`Errores de validación: ${JSON.stringify(validationErrors)}`);
       }
-      
       throw new Error('Error al crear el ejercicio');
     }
   },
@@ -140,62 +149,13 @@ export const exerciseService = {
    */
   async updateExercise(id: number, data: ExerciseFormData): Promise<Exercise> {
     try {
-      // Transformar datos según lo que espera el backend
-      const transformedData = {
-        ...data,
-        muscle_group: Array.isArray(data.muscle_group) ? data.muscle_group.join(',') : data.muscle_group,
-        equipment: Array.isArray(data.equipment) ? data.equipment.join(',') : data.equipment,
-        tags: data.tags, // tags debe permanecer como array
-      };
-      
-      console.log('Updating exercise with data:', transformedData);
+      const transformedData = transformFormDataForBackend(data);
       const responseData = await apiClient.put(EXERCISE_ENDPOINTS.update(id), transformedData);
-      console.log('Update exercise responseData:', responseData);
-      console.log('ResponseData type:', typeof responseData);
       
-      // Verificar que la respuesta exista
-      if (!responseData) {
-        console.error('No response data from server');
-        throw new Error('No se recibió respuesta del servidor');
-      }
-      
-      let exercise: Exercise;
-      const responseAsAny = responseData as any;
-      
-      // Verificar si la respuesta tiene la estructura ApiResponse<Exercise>
-      if (responseAsAny.data && typeof responseAsAny.data === 'object') {
-        // Estructura ApiResponse
-        exercise = responseAsAny.data;
-        console.log('Using responseData.data as exercise:', exercise);
-      } else if (responseAsAny.id && responseAsAny.name) {
-        // Directamente el ejercicio
-        exercise = responseAsAny;
-        console.log('Using responseData directly as exercise:', exercise);
-      } else {
-        console.error('Invalid response structure:', responseData);
-        throw new Error('Estructura de respuesta inválida del servidor');
-      }
-      
-      console.log('Exercise object:', exercise);
-      console.log('Exercise type:', typeof exercise);
-      
-      // Validar que el ejercicio tenga los campos requeridos
-      if (!exercise || typeof exercise !== 'object') {
-        console.error('Invalid exercise object:', exercise);
-        throw new Error('Objeto de ejercicio inválido');
-      }
-      
-      if (!exercise.id || !exercise.name) {
-        console.error('Exercise missing required fields:', { id: exercise.id, name: exercise.name });
-        throw new Error('El ejercicio actualizado no tiene los campos requeridos');
-      }
-      
-      console.log('Exercise validation passed, returning:', exercise);
-      return exercise;
+      // Extraer ejercicio de la respuesta y transformar
+      const rawExercise = responseData.data || responseData;
+      return transformExerciseData(rawExercise);
     } catch (error: any) {
-      console.error('Error updating exercise:', error);
-      console.error('Error response:', error.response?.data);
-      console.error('Error status:', error.response?.status);
       
       if (error.response?.status === 422) {
         const validationErrors = error.response.data?.errors || error.response.data?.message;
@@ -213,7 +173,6 @@ export const exerciseService = {
     try {
       await apiClient.delete(EXERCISE_ENDPOINTS.delete(id));
     } catch (error) {
-      console.error('Error deleting exercise:', error);
       // Propagar el error original para mantener la información del servidor
       throw error;
     }
@@ -227,7 +186,6 @@ export const exerciseService = {
       const response = await apiClient.post(EXERCISE_ENDPOINTS.duplicate(id));
       return response.data.exercise;
     } catch (error) {
-      console.error('Error duplicating exercise:', error);
       throw new Error('Error al duplicar el ejercicio');
     }
   },
@@ -239,7 +197,6 @@ export const exerciseService = {
     try {
       await apiClient.post(EXERCISE_ENDPOINTS.bulkDelete, { ids });
     } catch (error) {
-      console.error('Error bulk deleting exercises:', error);
       // Propagar el error original para mantener la información del servidor
       throw error;
     }
@@ -256,7 +213,6 @@ export const exerciseService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error exporting exercises:', error);
       throw new Error('Error al exportar los ejercicios');
     }
   },

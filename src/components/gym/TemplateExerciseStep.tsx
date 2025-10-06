@@ -52,6 +52,18 @@ const TemplateExerciseStep = ({
     setSelectedExercises(templateExercises);
   });
 
+  // Sincronizar sortableItems cuando selectedExercises cambia
+  useEffect(() => {
+    // Solo sincronizar si hay diferencia en longitud (nuevo item agregado externamente)
+    if (selectedExercises.length !== sortableItems.length) {
+      const newSortableExercises = selectedExercises.map(ex => ({
+        ...ex,
+        id: ex.exercise_id,
+      }));
+      setSortableItems(newSortableExercises);
+    }
+  }, [selectedExercises.length, sortableItems.length, setSortableItems, selectedExercises]);
+
   // Validate step
   const validateStep = () => {
     const isValid = selectedExercises.length > 0;
@@ -72,15 +84,27 @@ const TemplateExerciseStep = ({
     const newTemplateExercise: any = {
       exercise_id: exercise.id,
       exercise: exercise,
-      order: selectedExercises.length + 1,
+      display_order: selectedExercises.length + 1,
       sets: [
         {
           id: `temp-${Date.now()}`,
-          reps: 12,
-          rest_time: 60,
+          set_number: 1,
+          reps_min: 12,
+          reps_max: 12,
+          rest_seconds: 60,
+          // Campos de peso nuevos 2025-10-06
+          weight_min: undefined,
+          weight_max: undefined,
+          weight_target: undefined,
+          duration: undefined,
+          distance: undefined,
+          notes: '',
+          rpe_target: undefined,
         } as any,
       ],
       rest_between_sets: 60,
+      notes: '',
+      modifications: '',
     };
 
     // Add with proper id for sortable list
@@ -101,24 +125,36 @@ const TemplateExerciseStep = ({
       const newTemplateExercise: any = {
         exercise_id: exercise.id,
         exercise: exercise,
-        order: targetIndex !== undefined ? targetIndex + 1 : selectedExercises.length + 1,
+        display_order: targetIndex !== undefined ? targetIndex + 1 : selectedExercises.length + 1,
         sets: [
           {
             id: `temp-${Date.now()}`,
-            reps: 12,
-            rest_time: 60,
+            set_number: 1,
+            reps_min: 12,
+            reps_max: 12,
+            rest_seconds: 60,
+            // Campos de peso nuevos 2025-10-06
+            weight_min: undefined,
+            weight_max: undefined,
+            weight_target: undefined,
+            duration: undefined,
+            distance: undefined,
+            notes: '',
+            rpe_target: undefined,
           } as any,
         ],
         rest_between_sets: 60,
+        notes: '',
+        modifications: '',
       };
 
       if (targetIndex !== undefined) {
         const newExercises = [...selectedExercises];
         newExercises.splice(targetIndex, 0, newTemplateExercise);
-        // Update order for all exercises
+        // Update display_order for all exercises
         const reorderedExercises = newExercises.map((ex, index) => ({
           ...ex,
-          order: index + 1,
+          display_order: index + 1,
         }));
         setSelectedExercises(reorderedExercises);
         setSortableItems(reorderedExercises.map(ex => ({ ...ex, id: ex.exercise_id })));
@@ -214,7 +250,9 @@ const TemplateExerciseStep = ({
               </div>
             ) : (
               <div className="space-y-3">
-                {selectedExercises.map((templateExercise, index) => (
+                {sortableItems.map((item, index) => {
+                  const templateExercise = item as any;
+                  return (
                   <div
                     key={templateExercise.exercise_id}
                     draggable
@@ -272,19 +310,43 @@ const TemplateExerciseStep = ({
 
                           {/* Muscle Groups */}
                           <div className="flex flex-wrap gap-1 mt-2">
-                            {templateExercise.exercise?.muscle_group.slice(0, 2).map((group: any) => (
-                              <span
-                                key={group}
-                                className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-700"
-                              >
-                                {group}
-                              </span>
-                            ))}
-                            {(templateExercise.exercise?.muscle_group.length || 0) > 2 && (
-                              <span className="text-xs text-gray-500">
-                                +{(templateExercise.exercise?.muscle_group.length || 0) - 2} más
-                              </span>
-                            )}
+                            {(() => {
+                              const mg = templateExercise.exercise?.muscle_group;
+                              let muscleGroups: string[] = [];
+                              
+                              if (Array.isArray(mg)) {
+                                muscleGroups = mg;
+                              } else if (mg) {
+                                const mgString = String(mg);
+                                muscleGroups = mgString.split(',').map(g => g.trim());
+                              }
+                              
+                              return muscleGroups.slice(0, 2).map((group: string) => (
+                                <span
+                                  key={group}
+                                  className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-700"
+                                >
+                                  {group}
+                                </span>
+                              ));
+                            })()}
+                            {(() => {
+                              const mg = templateExercise.exercise?.muscle_group;
+                              let muscleGroups: string[] = [];
+                              
+                              if (Array.isArray(mg)) {
+                                muscleGroups = mg;
+                              } else if (mg) {
+                                const mgString = String(mg);
+                                muscleGroups = mgString.split(',');
+                              }
+                              
+                              return muscleGroups.length > 2 && (
+                                <span className="text-xs text-gray-500">
+                                  +{muscleGroups.length - 2} más
+                                </span>
+                              );
+                            })()}
                           </div>
                         </div>
                       </div>
@@ -325,7 +387,8 @@ const TemplateExerciseStep = ({
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

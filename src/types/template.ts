@@ -2,18 +2,24 @@
 
 import type { Exercise } from './exercise';
 
-// ✅ NUEVA ESTRUCTURA: Series según backend real
+// ✅ NUEVA ESTRUCTURA: Series según backend real - ACTUALIZADO 2025-10-06
 export interface TemplateSet {
   set_number: number;
   reps_min: number;
   reps_max?: number;
-  weight?: number;
+  // CAMPOS DE PESO AGREGADOS SEGÚN BACKEND 2025-10-06
+  weight_min?: number; // Peso mínimo recomendado (kg)
+  weight_max?: number; // Peso máximo recomendado (kg)
+  weight_target?: number; // Peso objetivo/sugerido (kg)
+  weight?: number; // Mantenido para compatibilidad legacy
   duration?: number; // en segundos para ejercicios de tiempo
   distance?: number; // en metros para ejercicios de distancia
   rest_seconds: number; // tiempo de descanso en segundos
   notes?: string;
-  rpe?: number; // Rate of Perceived Exertion (1-10)
-  tempo?: string; // ej: "2-1-2-1" (excéntrico-pausa-concéntrico-pausa)
+  rpe_target?: number; // RENOMBRADO: Rate of Perceived Exertion (1-10)
+  rpe?: number; // Mantenido para compatibilidad legacy
+  // CAMPO REMOVIDO: tempo ya no se usa en sets según backend
+  // tempo?: string; // ELIMINADO según backend 2025-10-06
 }
 
 // ✅ NUEVA ESTRUCTURA: Ejercicio según backend real
@@ -29,17 +35,22 @@ export interface TemplateExercise {
   modifications?: string; // Modificaciones específicas para este ejercicio
 }
 
-// ✅ COMPATIBILIDAD: Mantener SetConfiguration para formularios
+// ✅ COMPATIBILIDAD: Mantener SetConfiguration para formularios - ACTUALIZADO 2025-10-06
 export interface SetConfiguration {
   id?: string;
   reps?: number;
-  weight?: number;
+  // CAMPOS DE PESO AGREGADOS
+  weight_min?: number;
+  weight_max?: number;
+  weight_target?: number;
+  weight?: number; // Mantenido para compatibilidad legacy
   duration?: number;
   distance?: number;
   rest_time?: number;
   notes?: string;
   rpe?: number;
-  tempo?: string;
+  // CAMPO REMOVIDO: tempo ya no se usa en sets
+  // tempo?: string; // ELIMINADO según backend 2025-10-06
 }
 
 // ✅ NUEVA ESTRUCTURA: Plantilla según backend real

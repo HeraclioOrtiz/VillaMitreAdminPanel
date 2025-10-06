@@ -31,7 +31,33 @@ const TemplateSetsStep = ({
 
   const [currentView, setCurrentView] = useState<'editor' | 'preview'>('editor');
   const [selectedExerciseIndex, setSelectedExerciseIndex] = useState(0);
-  const [exercises, setExercises] = useState<any[]>(data.exercises || []);
+  
+  // Extraer ejercicios de la estructura correcta
+  // El paso 2 guarda { exercises: [...] } bajo la clave 'exercises'
+  // Entonces data.exercises = { exercises: [...] }
+  const getExercises = () => {
+    // Si data.exercises es un objeto con propiedad exercises
+    if (data.exercises && typeof data.exercises === 'object' && 'exercises' in data.exercises) {
+      return Array.isArray(data.exercises.exercises) ? data.exercises.exercises : [];
+    }
+    // Si data.exercises ya es un array
+    if (Array.isArray(data.exercises)) {
+      return data.exercises;
+    }
+    // Fallback a array vacío
+    return [];
+  };
+
+  const initialExercises = getExercises();
+  const [exercises, setExercises] = useState<any[]>(initialExercises);
+
+  // Sincronizar con datos externos cuando cambian
+  useEffect(() => {
+    const newExercises = getExercises();
+    if (newExercises.length > 0 && newExercises.length !== exercises.length) {
+      setExercises(newExercises);
+    }
+  }, [data.exercises]);
 
   // Validate step
   const validateStep = () => {
@@ -383,7 +409,7 @@ const TemplateSetsStep = ({
               <li>Usa "Aplicar a Todos" para copiar la configuración a todos los ejercicios</li>
               <li>El botón ↓ en cada campo copia el valor a todas las series del ejercicio</li>
               <li>Usa la vista previa para revisar la plantilla completa antes de crear</li>
-              <li>Los campos opcionales (peso, RPE, tempo) pueden dejarse vacíos</li>
+              <li>Los campos opcionales (peso objetivo, rango de peso, RPE, duración, distancia) pueden dejarse vacíos</li>
             </ul>
           </div>
         </div>

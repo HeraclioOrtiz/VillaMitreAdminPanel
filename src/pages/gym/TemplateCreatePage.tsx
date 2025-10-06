@@ -61,11 +61,28 @@ const TemplateCreatePage = () => {
   // Manejar finalización del wizard
   const handleWizardComplete = async (data: any) => {
     try {
-      // Combinar todos los datos del wizard
+      console.log('📋 Datos del wizard completo:', data);
+      
+      // Combinar todos los datos de los 3 pasos del wizard
       const templateData: TemplateFormData = {
-        ...data['basic-info'],
-        exercises: data['sets-config']?.exercises || data['exercises'] || [],
-        // Valores por defecto para campos requeridos
+        // Paso 1: Información básica
+        name: data['basic-info']?.name || '',
+        description: data['basic-info']?.description || '',
+        estimated_duration: data['basic-info']?.estimated_duration || 60,
+        difficulty: data['basic-info']?.difficulty || 'intermediate',
+        primary_goal: data['basic-info']?.primary_goal || 'hypertrophy',
+        secondary_goals: data['basic-info']?.secondary_goals || [],
+        intensity_level: data['basic-info']?.intensity_level || 'moderate',
+        target_muscle_groups: data['basic-info']?.target_muscle_groups || [],
+        equipment_needed: data['basic-info']?.equipment_needed || [],
+        tags: data['basic-info']?.tags || [],
+        is_public: data['basic-info']?.is_public || false,
+        
+        // Paso 2: Ejercicios seleccionados (ID: 'exercises')
+        // Paso 3: Series configuradas (ID: 'sets-config') - tiene prioridad
+        exercises: data['sets-config']?.exercises || data['exercises']?.exercises || [],
+        
+        // Campos opcionales
         warm_up_notes: data['basic-info']?.warm_up_notes || '',
         cool_down_notes: data['basic-info']?.cool_down_notes || '',
         progression_notes: data['basic-info']?.progression_notes || '',
@@ -74,6 +91,7 @@ const TemplateCreatePage = () => {
         contraindications: data['basic-info']?.contraindications || [],
       };
 
+      console.log('📤 Enviando templateData:', templateData);
       await createTemplateMutation.mutateAsync(templateData);
     } catch (error) {
       // El error ya se maneja en el callback del hook

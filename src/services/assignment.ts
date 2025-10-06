@@ -109,7 +109,12 @@ class AssignmentService {
    * GET /professor/my-students
    */
   async getProfessorStudents(): Promise<ProfessorStudentsResponse> {
-    const response = await apiClient.get<ProfessorStudentsResponse>('/professor/my-students');
+    const response = await apiClient.get<ProfessorStudentsResponse>('/professor/my-students', {
+      params: {
+        include: 'student,professor,template_assignments.daily_template',
+        with: 'student,professor,template_assignments.daily_template'
+      }
+    });
     return response.data;
   }
 

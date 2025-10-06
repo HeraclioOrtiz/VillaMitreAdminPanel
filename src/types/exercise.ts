@@ -4,13 +4,17 @@ export interface Exercise {
   id: number;
   name: string;
   description?: string;
-  muscle_group: string; // Viene como string del backend
+  // CAMPOS ACTUALIZADOS SEGÚN BACKEND 2025-10-06
+  target_muscle_groups: string[]; // CAMBIADO: JSON → Array cast
+  muscle_group?: string; // Mantenido para compatibilidad legacy
   movement_pattern?: string | null;
-  equipment: string; // Viene como string del backend
-  difficulty: string; // Puede ser 'beginner', 'intermediate', 'advanced' o valores en español
-  tags: string[] | null; // Puede ser null
+  equipment: string[]; // CAMBIADO: JSON → Array cast
+  difficulty_level: DifficultyLevel; // CAMBIADO: Enum estricto
+  difficulty?: string; // Mantenido para compatibilidad legacy
+  exercise_type: ExerciseType; // NUEVO: Enum para tipo de ejercicio
+  tags: string[]; // CAMBIADO: Siempre array (no null)
   instructions?: string | null;
-  tempo?: string | null;
+  tempo?: string | null; // Mantenido en Exercise (solo removido de Sets)
   video_url?: string;
   image_url?: string;
   estimated_duration?: number;
@@ -35,10 +39,14 @@ export interface ExerciseFilters {
 export interface ExerciseFormData {
   name: string;
   description?: string;
-  muscle_group: string; // Cambiado a string para coincidir con backend
+  // CAMPOS ACTUALIZADOS SEGÚN BACKEND 2025-10-06
+  target_muscle_groups: string[]; // CAMBIADO: Array de grupos musculares
+  muscle_group?: string; // Mantenido para compatibilidad legacy
   movement_pattern?: string;
-  equipment: string; // Cambiado a string para coincidir con backend
-  difficulty: string; // Cambiado a string flexible para valores en español
+  equipment: string[]; // CAMBIADO: Array de equipamiento
+  difficulty_level: DifficultyLevel; // CAMBIADO: Enum estricto
+  difficulty?: string; // Mantenido para compatibilidad legacy
+  exercise_type: ExerciseType; // NUEVO: Tipo de ejercicio
   tags: string[];
   instructions: string;
   tempo?: string;
@@ -137,7 +145,16 @@ export const DIFFICULTY_LEVELS = [
   'advanced'
 ] as const;
 
+// NUEVO: Tipos de ejercicio según backend 2025-10-06
+export const EXERCISE_TYPES = [
+  'strength',
+  'cardio',
+  'flexibility',
+  'balance'
+] as const;
+
 export type MuscleGroup = typeof MUSCLE_GROUPS[number];
 export type EquipmentType = typeof EQUIPMENT_TYPES[number];
 export type MovementPattern = typeof MOVEMENT_PATTERNS[number];
 export type DifficultyLevel = typeof DIFFICULTY_LEVELS[number];
+export type ExerciseType = typeof EXERCISE_TYPES[number];

@@ -71,21 +71,7 @@ const DataTable = <T extends Record<string, any>>({
   striped = false,
   bordered = false,
 }: DataTableProps<T>) => {
-  console.log('📊 DataTable - Component is rendering');
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
-  
-  // Debug logs para DataTable
-  console.log('📊 DataTable - Received props:', {
-    columns: columns.length,
-    data,
-    dataLength: data?.length,
-    dataType: typeof data,
-    isArray: Array.isArray(data),
-    loading,
-    pagination,
-    rowKey,
-    firstItem: data?.[0]
-  });
 
   // Función para obtener la clave de una fila
   const getRowKey = (record: T, index: number): React.Key => {
@@ -174,7 +160,6 @@ const DataTable = <T extends Record<string, any>>({
 
   // Mostrar skeleton mientras carga
   if (loading) {
-    console.log('🔄 DataTable - Showing skeleton because loading=true');
     return (
       <TableSkeleton
         rows={pagination?.pageSize || 10}
@@ -183,15 +168,6 @@ const DataTable = <T extends Record<string, any>>({
       />
     );
   }
-
-  // Debug final antes del render
-  console.log('🎯 DataTable - About to render table:', {
-    hasData: data.length > 0,
-    dataLength: data.length,
-    columnsLength: columns.length,
-    loading,
-    willShowEmptyState: data.length === 0
-  });
 
   return (
     <div className={className}>

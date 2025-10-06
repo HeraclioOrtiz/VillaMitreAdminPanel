@@ -282,10 +282,18 @@ const TemplatePreview = ({ data, className = '' }: TemplatePreviewProps) => {
                                   🎯 {templateExercise.exercise.movement_pattern}
                                 </span>
                               )}
-                              {templateExercise.exercise.equipment && templateExercise.exercise.equipment !== 'Ninguno' && (
-                                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                  🏋️ {templateExercise.exercise.equipment}
-                                </span>
+                              {templateExercise.exercise.equipment && (
+                                Array.isArray(templateExercise.exercise.equipment) 
+                                  ? templateExercise.exercise.equipment.map((eq, eqIdx) => (
+                                      <span key={eqIdx} className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        🏋️ {eq}
+                                      </span>
+                                    ))
+                                  : typeof templateExercise.exercise.equipment === 'string' && templateExercise.exercise.equipment !== 'Ninguno' && (
+                                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        🏋️ {templateExercise.exercise.equipment}
+                                      </span>
+                                    )
                               )}
                               {templateExercise.exercise.difficulty && (
                                 <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
@@ -381,7 +389,7 @@ const TemplatePreview = ({ data, className = '' }: TemplatePreviewProps) => {
                               {/* Repeticiones */}
                               {(set.reps_min || set.reps_max) && (
                                 <div className="flex items-center space-x-2">
-                                  <span className="text-xs font-medium text-gray-600 w-16">Reps:</span>
+                                  <span className="text-xs font-medium text-gray-600 w-20">Reps:</span>
                                   <span className="text-sm font-semibold text-gray-900">
                                     {set.reps_min === set.reps_max 
                                       ? set.reps_min
@@ -390,25 +398,57 @@ const TemplatePreview = ({ data, className = '' }: TemplatePreviewProps) => {
                                 </div>
                               )}
                               
-                              {/* Descanso */}
-                              {set.rest_seconds && (
+                              {/* Peso Objetivo - NUEVO CAMPO 2025-10-06 */}
+                              {((set as any).weight_target || set.weight) && (
                                 <div className="flex items-center space-x-2">
-                                  <span className="text-xs font-medium text-gray-600 w-16">Descanso:</span>
-                                  <span className="text-sm font-semibold text-orange-700">
-                                    {set.rest_seconds}s
+                                  <span className="text-xs font-medium text-gray-600 w-20">Peso:</span>
+                                  <span className="text-sm font-semibold text-blue-700">
+                                    {(set as any).weight_target || set.weight}kg
                                   </span>
                                 </div>
                               )}
                               
-                              {/* Tempo */}
-                              {set.tempo && (
+                              {/* Rango de Peso - NUEVOS CAMPOS 2025-10-06 */}
+                              {((set as any).weight_min || (set as any).weight_max) && (
                                 <div className="flex items-center space-x-2">
-                                  <span className="text-xs font-medium text-gray-600 w-16">Tempo:</span>
-                                  <span className="text-sm font-mono font-semibold text-indigo-700">
-                                    {set.tempo}
+                                  <span className="text-xs font-medium text-gray-600 w-20">Rango:</span>
+                                  <span className="text-sm font-semibold text-blue-600">
+                                    {(set as any).weight_min || 0}kg - {(set as any).weight_max || 0}kg
                                   </span>
                                 </div>
                               )}
+                              
+                              {/* Duración */}
+                              {(set.duration || (set as any).duration_seconds) && (
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-xs font-medium text-gray-600 w-20">Duración:</span>
+                                  <span className="text-sm font-semibold text-purple-700">
+                                    {set.duration || (set as any).duration_seconds}s
+                                  </span>
+                                </div>
+                              )}
+                              
+                              {/* Distancia */}
+                              {set.distance && (
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-xs font-medium text-gray-600 w-20">Distancia:</span>
+                                  <span className="text-sm font-semibold text-teal-700">
+                                    {set.distance}m
+                                  </span>
+                                </div>
+                              )}
+                              
+                              {/* Descanso */}
+                              {(set.rest_seconds || (set as any).rest_time) && (
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-xs font-medium text-gray-600 w-20">Descanso:</span>
+                                  <span className="text-sm font-semibold text-orange-700">
+                                    {set.rest_seconds || (set as any).rest_time}s
+                                  </span>
+                                </div>
+                              )}
+                              
+                              {/* CAMPO REMOVIDO: Tempo ya no se usa en sets según backend 2025-10-06 */}
                             </div>
                             
                             {/* Notas de la serie */}

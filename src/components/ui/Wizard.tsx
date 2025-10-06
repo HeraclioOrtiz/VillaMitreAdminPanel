@@ -145,9 +145,14 @@ const Wizard = ({
     const StepComponent = currentStepData?.component;
     
     if (StepComponent && currentStepData) {
+      // Pasar todos los datos acumulados, no solo los del paso actual
+      // Esto permite que cada paso acceda a datos de pasos anteriores
+      const allData = wizardActions.getData(); // Sin stepId devuelve todos los datos
+      const stepSpecificData = wizardActions.getData(currentStepData.id);
+      
       return (
         <StepComponent
-          data={wizardActions.getData(currentStepData.id)}
+          data={{ ...allData, ...stepSpecificData }}
           onDataChange={(data: any) => wizardActions.updateStepData(currentStepData.id, data)}
           onValidationChange={(isValid: boolean) => {
             if (isValid) {
@@ -156,20 +161,19 @@ const Wizard = ({
               wizardActions.markStepAsIncomplete(currentStepData.id);
             }
           }}
-          errors={stepErrors}
+          errors={wizardState.errors[currentStepData.id] || []}
           isLoading={wizardState.isLoading}
         />
       );
     }
     
-    return children || null;
+    return null;
   };
 
   return (
     <div className={`bg-white rounded-lg shadow-lg ${className}`}>
       {/* Header */}
-      <div className={`border-b border-gray-200 ${headerClassName}`}>
-        <div className="px-6 py-4">
+      <div className={`px-6 py-4 ${headerClassName}`}>
           {/* Título y subtítulo */}
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -238,7 +242,6 @@ const Wizard = ({
             )}
           </div>
         </div>
-      </div>
 
       {/* Content */}
       <div className={`px-6 py-6 ${contentClassName}`}>

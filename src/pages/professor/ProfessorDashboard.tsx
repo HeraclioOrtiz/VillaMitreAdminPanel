@@ -201,12 +201,6 @@ export const ProfessorDashboard = memo(function ProfessorDashboard() {
   const { data: testTemplatesResponse, isLoading: testIsLoading, error: testError } = useTemplates({
     per_page: 10,
   });
-  
-  // 🔴 TEST: Logs para verificar si las plantillas se cargan
-  console.log('🧪 TEST ProfessorDashboard - testTemplatesResponse:', testTemplatesResponse);
-  console.log('🧪 TEST ProfessorDashboard - testIsLoading:', testIsLoading);
-  console.log('🧪 TEST ProfessorDashboard - testError:', testError);
-  console.log('🧪 TEST ProfessorDashboard - templates count:', testTemplatesResponse?.data?.length);
 
   // Handlers
   const handleAssignTemplate = useCallback((student: ProfessorStudentAssignment) => {
@@ -216,7 +210,6 @@ export const ProfessorDashboard = memo(function ProfessorDashboard() {
 
   const handleViewProgress = useCallback((student: ProfessorStudentAssignment) => {
     // TODO: Implementar vista de progreso detallado
-    console.log('View progress for student:', student);
   }, []);
 
   const handleViewCalendar = useCallback((student: ProfessorStudentAssignment) => {
@@ -226,12 +219,10 @@ export const ProfessorDashboard = memo(function ProfessorDashboard() {
 
   const handleSessionClick = useCallback((session: TodaySession) => {
     // TODO: Implementar vista detallada de sesión
-    console.log('Session clicked:', session);
   }, []);
 
   const handleStudentClick = useCallback((studentId: number) => {
     // TODO: Implementar vista detallada de estudiante
-    console.log('Student clicked:', studentId);
   }, []);
 
   const handleCloseAssignModal = useCallback(() => {
@@ -293,12 +284,10 @@ export const ProfessorDashboard = memo(function ProfessorDashboard() {
           <Button
             variant="secondary"
             onClick={() => {
-              console.log('🧪 TEST Button clicked - Templates:', testTemplatesResponse);
-              console.log('🧪 TEST Button clicked - Loading:', testIsLoading);
-              console.log('🧪 TEST Button clicked - Error:', testError);
+              // Test templates data
             }}
           >
-            Test Plantillas ({testTemplatesResponse?.data?.length || 0})
+            Plantillas ({testTemplatesResponse?.data?.length || 0})
           </Button>
         </div>
       </div>

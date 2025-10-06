@@ -275,7 +275,7 @@ const ExerciseSelector = ({
                       <h4 className="text-sm font-medium text-gray-900 truncate">
                         {exercise.name}
                       </h4>
-                      {getDifficultyBadge(exercise.difficulty)}
+                      {exercise.difficulty && getDifficultyBadge(exercise.difficulty)}
                     </div>
                     
                     {exercise.description && (
@@ -286,42 +286,86 @@ const ExerciseSelector = ({
                     
                     {/* Muscle Groups */}
                     <div className="flex flex-wrap gap-1 mb-2">
-                      {exercise.muscle_group.split(',').slice(0, 3).map((group: string) => {
-                        const trimmedGroup = group.trim();
-                        return (
+                      {(() => {
+                        // Manejar muscle_group como array o string
+                        const mg = exercise.muscle_group;
+                        let muscleGroups: string[] = [];
+                        
+                        if (Array.isArray(mg)) {
+                          muscleGroups = mg;
+                        } else if (mg) {
+                          const mgString = String(mg);
+                          muscleGroups = mgString.split(',').map(g => g.trim());
+                        }
+                        
+                        return muscleGroups.slice(0, 3).map((group: string) => (
                           <span
-                            key={trimmedGroup}
-                            className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getMuscleGroupColor(trimmedGroup)}`}
+                            key={group}
+                            className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getMuscleGroupColor(group)}`}
                           >
-                            {MUSCLE_GROUP_OPTIONS.find(opt => opt.value === trimmedGroup)?.label || trimmedGroup}
+                            {MUSCLE_GROUP_OPTIONS.find(opt => opt.value === group)?.label || group}
+                          </span>
+                        ));
+                      })()}
+                      {(() => {
+                        const mg = exercise.muscle_group;
+                        let muscleGroups: string[] = [];
+                        
+                        if (Array.isArray(mg)) {
+                          muscleGroups = mg;
+                        } else if (mg) {
+                          const mgString = String(mg);
+                          muscleGroups = mgString.split(',');
+                        }
+                        
+                        return muscleGroups.length > 3 && (
+                          <span className="text-xs text-gray-500">
+                            +{muscleGroups.length - 3} más
                           </span>
                         );
-                      })}
-                      {exercise.muscle_group.split(',').length > 3 && (
-                        <span className="text-xs text-gray-500">
-                          +{exercise.muscle_group.split(',').length - 3} más
-                        </span>
-                      )}
+                      })()}
                     </div>
 
                     {/* Equipment */}
                     <div className="flex flex-wrap gap-1">
-                      {exercise.equipment.split(',').slice(0, 2).map((eq: string) => {
-                        const trimmedEq = eq.trim();
-                        return (
+                      {(() => {
+                        // Manejar equipment como array o string
+                        const eq = exercise.equipment;
+                        let equipmentList: string[] = [];
+                        
+                        if (Array.isArray(eq)) {
+                          equipmentList = eq;
+                        } else if (eq) {
+                          const eqString = String(eq);
+                          equipmentList = eqString.split(',').map(e => e.trim());
+                        }
+                        
+                        return equipmentList.slice(0, 2).map((item: string) => (
                           <span
-                            key={trimmedEq}
+                            key={item}
                             className="inline-flex items-center px-2 py-1 rounded text-xs bg-gray-100 text-gray-700"
                           >
-                            {EQUIPMENT_OPTIONS.find(opt => opt.value === trimmedEq)?.label || trimmedEq}
+                            {EQUIPMENT_OPTIONS.find(opt => opt.value === item)?.label || item}
+                          </span>
+                        ));
+                      })()}
+                      {(() => {
+                        const eq = exercise.equipment;
+                        let equipmentList: string[] = [];
+                        
+                        if (Array.isArray(eq)) {
+                          equipmentList = eq;
+                        } else if (eq) {
+                          const eqString = String(eq);
+                          equipmentList = eqString.split(',');
+                        }
+                        
+                        return equipmentList.length > 2 && (
+                          <span className="text-xs text-gray-500">
+                            +{equipmentList.length - 2} más
                           </span>
                         );
-                      })}
-                      {exercise.equipment.split(',').length > 2 && (
-                        <span className="text-xs text-gray-500">
-                          +{exercise.equipment.split(',').length - 2} más
-                        </span>
-                      )}
+                      })()}
                     </div>
                   </div>
                   

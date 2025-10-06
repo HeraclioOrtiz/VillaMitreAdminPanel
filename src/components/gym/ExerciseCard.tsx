@@ -25,7 +25,7 @@ const ExerciseCard = memo<ExerciseCardProps>(function ExerciseCard({
   onDelete,
 }) {
 
-  // Memoizar badge de dificultad
+  // Memoizar badge de dificultad - ACTUALIZADO 2025-10-06
   const difficultyBadge = useMemo(() => {
     const badges = {
       beginner: { 
@@ -44,8 +44,10 @@ const ExerciseCard = memo<ExerciseCardProps>(function ExerciseCard({
         label: 'Avanzado' 
       },
     };
-    return badges[exercise.difficulty] || badges.beginner;
-  }, [exercise.difficulty]);
+    // Usar difficulty_level, fallback a difficulty legacy
+    const level = exercise.difficulty_level || exercise.difficulty || 'beginner';
+    return badges[level] || badges.beginner;
+  }, [exercise.difficulty_level, exercise.difficulty]);
 
   // Memoizar función para obtener el color del grupo muscular
   const getMuscleGroupColor = useCallback((group: string) => {
@@ -79,20 +81,18 @@ const ExerciseCard = memo<ExerciseCardProps>(function ExerciseCard({
     onDelete?.(exercise);
   }, [onDelete, exercise]);
 
-  // Memoizar muscle groups procesados
+  // Memoizar muscle groups procesados - ACTUALIZADO 2025-10-06
   const muscleGroups = useMemo(() => {
-    const groups = Array.isArray(exercise.muscle_group) 
-      ? exercise.muscle_group 
-      : [exercise.muscle_group];
-    return groups.filter(Boolean);
-  }, [exercise.muscle_group]);
+    // Priorizar target_muscle_groups, fallback a muscle_group legacy
+    const groups = exercise.target_muscle_groups || 
+      (exercise.muscle_group ? [exercise.muscle_group] : []);
+    return Array.isArray(groups) ? groups.filter(Boolean) : [groups].filter(Boolean);
+  }, [exercise.target_muscle_groups, exercise.muscle_group]);
 
-  // Memoizar equipment procesado
+  // Memoizar equipment procesado - ACTUALIZADO 2025-10-06
   const equipment = useMemo(() => {
-    const equip = Array.isArray(exercise.equipment) 
-      ? exercise.equipment 
-      : [exercise.equipment];
-    return equip.filter(Boolean);
+    const equip = exercise.equipment || [];
+    return Array.isArray(equip) ? equip.filter(Boolean) : [equip].filter(Boolean);
   }, [exercise.equipment]);
 
   // Memoizar tags procesados

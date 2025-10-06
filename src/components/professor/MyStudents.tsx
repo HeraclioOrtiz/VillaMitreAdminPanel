@@ -269,6 +269,13 @@ const StudentCard = memo<{
   onViewCalendar 
 }) {
   const { student } = assignment;
+  
+  // Validación: Si student es null, no renderizar la carta
+  if (!student) {
+    console.warn('StudentCard: student es null para assignment', assignment.id);
+    return null;
+  }
+  
   const displayName = student.name || `${student.nombre || ''} ${student.apellido || ''}`.trim() || 'Sin nombre';
   
   // Calcular estadísticas reales

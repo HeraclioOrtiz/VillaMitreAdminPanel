@@ -26,21 +26,14 @@ export const useExercises = (params: ExerciseQueryParams = {}) => {
   const queryKey = useMemo(() => exerciseKeys.list(params), [params]);
   
   // Memoizar queryFn para estabilidad de referencia
-  const queryFn = useCallback(() => {
-    console.log('useExercises - queryFn called with params:', params);
-    return exerciseService.getExercises(params);
-  }, [params]);
+  const queryFn = useCallback(() => exerciseService.getExercises(params), [params]);
   
-  console.log('useExercises - hook called with params:', params);
-  console.log('useExercises - queryKey:', queryKey);
-  
-  const result = useQuery<ExerciseListResponse>({
+  return useQuery<ExerciseListResponse>({
     queryKey,
     queryFn,
     staleTime: 5 * 60 * 1000, // 5 minutos
     gcTime: 10 * 60 * 1000, // 10 minutos (reemplaza cacheTime)
-    // Temporalmente removemos placeholderData para debug
-    // placeholderData: (previousData) => previousData, // Para paginación suave
+    placeholderData: (previousData) => previousData, // Para paginación suave
     refetchOnWindowFocus: false, // Evitar refetch innecesarios
     retry: (failureCount, error: any) => {
       // Retry inteligente basado en el tipo de error
@@ -48,10 +41,6 @@ export const useExercises = (params: ExerciseQueryParams = {}) => {
       return failureCount < 3;
     },
   });
-  
-  console.log('useExercises - query result:', result);
-  
-  return result;
 };
 
 /**
@@ -98,10 +87,7 @@ export const useCreateExercise = (options?: {
   // Memoizar onSuccess callback
   const onSuccess = useCallback(
     (exercise: Exercise) => {
-      console.log('Exercise created successfully:', exercise);
-      
       // Invalidar todas las listas de ejercicios
-      console.log('Invalidating queries with key:', exerciseKeys.lists());
       queryClient.invalidateQueries({ queryKey: exerciseKeys.lists() });
       
       // También invalidar todas las queries de ejercicios para asegurar refresh
@@ -118,9 +104,6 @@ export const useCreateExercise = (options?: {
   // Memoizar onError callback
   const onError = useCallback(
     (error: any) => {
-      console.error('useCreateExercise - Error creating exercise:', error);
-      console.error('useCreateExercise - Error stack:', error.stack);
-      console.error('useCreateExercise - Error type:', typeof error);
       options?.onError?.(error);
     },
     [options?.onError]
@@ -160,7 +143,6 @@ export const useUpdateExercise = (options?: {
       options?.onSuccess?.(updatedExercise);
     },
     onError: (error) => {
-      console.error('Error updating exercise:', error);
       options?.onError?.(error);
     },
   });
@@ -184,7 +166,6 @@ export const useDeleteExercise = (options?: {
       options?.onSuccess?.(deletedId);
     },
     onError: (error) => {
-      console.error('Error deleting exercise:', error);
       options?.onError?.(error);
     },
   });
@@ -207,7 +188,6 @@ export const useDuplicateExercise = (options?: {
       options?.onSuccess?.(duplicatedExercise);
     },
     onError: (error) => {
-      console.error('Error duplicating exercise:', error);
       options?.onError?.(error);
     },
   });
@@ -233,7 +213,6 @@ export const useBulkDeleteExercises = (options?: {
       options?.onSuccess?.(deletedIds);
     },
     onError: (error) => {
-      console.error('Error bulk deleting exercises:', error);
       options?.onError?.(error);
     },
   });
@@ -258,7 +237,7 @@ export const useExportExercises = () => {
       window.URL.revokeObjectURL(url);
     },
     onError: (error) => {
-      console.error('Error exporting exercises:', error);
+      // Error handled by caller
     },
   });
 };

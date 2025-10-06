@@ -115,24 +115,23 @@ export const useCreateTemplate = (options?: {
 }) => {
   const queryClient = useQueryClient();
 
-  // Memoizar callbacks para estabilidad de referencia
-  const onSuccess = useCallback((template: DailyTemplate) => {
-    // Invalidar todas las listas de plantillas
-    queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
-    // Invalidar estadísticas
-    queryClient.invalidateQueries({ queryKey: templateKeys.stats() });
-    options?.onSuccess?.(template);
-  }, [queryClient, options?.onSuccess]);
-
-  const onError = useCallback((error: any) => {
-    console.error('Error creating template:', error);
-    options?.onError?.(error);
-  }, [options?.onError]);
-
   return useMutation({
     mutationFn: (data: TemplateFormData) => templateService.createTemplate(data),
-    onSuccess,
-    onError,
+    onSuccess: async (template: DailyTemplate) => {
+      // Invalidar y refetch inmediato de todas las listas
+      await queryClient.invalidateQueries({ 
+        queryKey: templateKeys.lists(),
+        refetchType: 'active'
+      });
+      
+      // Invalidar estadísticas
+      queryClient.invalidateQueries({ queryKey: templateKeys.stats() });
+      
+      options?.onSuccess?.(template);
+    },
+    onError: (error: any) => {
+      options?.onError?.(error);
+    },
   });
 };
 
@@ -148,19 +147,25 @@ export const useUpdateTemplate = (options?: {
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: TemplateFormData }) =>
       templateService.updateTemplate(id, data),
-    onSuccess: (updatedTemplate) => {
-      // Invalidar listas y actualizar el detalle específico
-      queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
+    onSuccess: async (updatedTemplate) => {
+      // Actualizar el detalle específico primero
       queryClient.setQueryData(
         templateKeys.detail(updatedTemplate.id),
         updatedTemplate
       );
+      
+      // Invalidar y refetch inmediato de listas
+      await queryClient.invalidateQueries({ 
+        queryKey: templateKeys.lists(),
+        refetchType: 'active'
+      });
+      
       // Invalidar estadísticas
       queryClient.invalidateQueries({ queryKey: templateKeys.stats() });
+      
       options?.onSuccess?.(updatedTemplate);
     },
     onError: (error) => {
-      console.error('Error updating template:', error);
       options?.onError?.(error);
     },
   });
@@ -177,17 +182,23 @@ export const useDeleteTemplate = (options?: {
 
   return useMutation({
     mutationFn: (id: number) => templateService.deleteTemplate(id),
-    onSuccess: (_, deletedId) => {
-      // Invalidar listas y remover el detalle específico
-      queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
+    onSuccess: async (_, deletedId) => {
+      // Invalidar y refetch inmediato de todas las listas
+      await queryClient.invalidateQueries({ 
+        queryKey: templateKeys.lists(),
+        refetchType: 'active' // Refetch de queries activas inmediatamente
+      });
+      
+      // Remover el detalle específico del cache
       queryClient.removeQueries({ queryKey: templateKeys.detail(deletedId) });
+      
       // Invalidar estadísticas y recomendaciones
       queryClient.invalidateQueries({ queryKey: templateKeys.stats() });
       queryClient.invalidateQueries({ queryKey: templateKeys.recommended() });
+      
       options?.onSuccess?.(deletedId);
     },
     onError: (error) => {
-      console.error('Error deleting template:', error);
       options?.onError?.(error);
     },
   });
@@ -204,15 +215,19 @@ export const useDuplicateTemplate = (options?: {
 
   return useMutation({
     mutationFn: (id: number) => templateService.duplicateTemplate(id),
-    onSuccess: (duplicatedTemplate) => {
-      // Invalidar todas las listas para mostrar la plantilla duplicada
-      queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
+    onSuccess: async (duplicatedTemplate) => {
+      // Invalidar y refetch inmediato de todas las listas para mostrar la plantilla duplicada
+      await queryClient.invalidateQueries({ 
+        queryKey: templateKeys.lists(),
+        refetchType: 'active'
+      });
+      
       // Invalidar estadísticas
       queryClient.invalidateQueries({ queryKey: templateKeys.stats() });
+      
       options?.onSuccess?.(duplicatedTemplate);
     },
     onError: (error) => {
-      console.error('Error duplicating template:', error);
       options?.onError?.(error);
     },
   });
@@ -230,20 +245,25 @@ export const useToggleFavoriteTemplate = (options?: {
   return useMutation({
     mutationFn: ({ id, isFavorite }: { id: number; isFavorite: boolean }) =>
       templateService.toggleFavorite(id, isFavorite),
-    onSuccess: (updatedTemplate) => {
+    onSuccess: async (updatedTemplate) => {
       // Actualizar el detalle específico
       queryClient.setQueryData(
         templateKeys.detail(updatedTemplate.id),
         updatedTemplate
       );
-      // Invalidar listas para reflejar cambios en favoritos
-      queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
+      
+      // Invalidar y refetch inmediato de listas para reflejar cambios en favoritos
+      await queryClient.invalidateQueries({ 
+        queryKey: templateKeys.lists(),
+        refetchType: 'active'
+      });
+      
       // Invalidar estadísticas
       queryClient.invalidateQueries({ queryKey: templateKeys.stats() });
+      
       options?.onSuccess?.(updatedTemplate);
     },
     onError: (error) => {
-      console.error('Error toggling favorite template:', error);
       options?.onError?.(error);
     },
   });
@@ -272,7 +292,6 @@ export const useBulkDeleteTemplates = (options?: {
       options?.onSuccess?.(deletedIds);
     },
     onError: (error) => {
-      console.error('Error bulk deleting templates:', error);
       options?.onError?.(error);
     },
   });
@@ -310,7 +329,6 @@ export const useBulkUpdateTemplates = (options?: {
       options?.onSuccess?.(updatedTemplates);
     },
     onError: (error) => {
-      console.error('Error bulk updating templates:', error);
       options?.onError?.(error);
     },
   });
@@ -335,7 +353,7 @@ export const useExportTemplates = () => {
       window.URL.revokeObjectURL(url);
     },
     onError: (error) => {
-      console.error('Error exporting templates:', error);
+      // Error handled by caller
     },
   });
 };
@@ -347,7 +365,7 @@ export const useValidateTemplate = () => {
   return useMutation({
     mutationFn: (data: TemplateFormData) => templateService.validateTemplate(data),
     onError: (error) => {
-      console.error('Error validating template:', error);
+      // Error handled by caller
     },
   });
 };

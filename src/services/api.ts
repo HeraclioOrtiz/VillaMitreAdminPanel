@@ -65,14 +65,16 @@ class ApiClient {
       },
       (error) => {
         if (import.meta.env.VITE_DEBUG_API === 'true') {
-          console.error('❌ API Response Error:', {
-            url: error.config?.url,
-            status: error.response?.status,
-            statusText: error.response?.statusText,
-            message: error.message,
-            responseData: error.response?.data,
-            headers: error.response?.headers
-          });
+          console.error('❌ API Response Error:');
+          console.error('  URL:', error.config?.url);
+          console.error('  Method:', error.config?.method?.toUpperCase());
+          console.error('  Status:', error.response?.status);
+          console.error('  Status Text:', error.response?.statusText);
+          console.error('  Error Message:', error.message);
+          console.error('  Response Data:', error.response?.data);
+          console.error('  Response Headers:', error.response?.headers);
+          console.error('  Request Data:', error.config?.data);
+          console.error('  Full Error:', error);
         }
         
         if (error.response?.status === 401) {
