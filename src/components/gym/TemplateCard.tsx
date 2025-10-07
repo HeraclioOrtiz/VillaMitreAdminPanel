@@ -147,7 +147,7 @@ const TemplateCard = memo<TemplateCardProps>(function TemplateCard({
     
     const groups = template.exercises
       .map(ex => ex.exercise?.muscle_group)
-      .filter(Boolean)
+      .filter((group): group is string => Boolean(group))
       .filter((group, index, arr) => arr.indexOf(group) === index);
     
     return groups;

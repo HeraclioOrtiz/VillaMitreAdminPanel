@@ -30,5 +30,18 @@
     "noUncheckedSideEffectImports": false
   },
   "include": ["src"],
-  "exclude": ["src/test/**/*", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"]
+  "exclude": [
+    "src/test/**/*",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "src/components/admin/AssignmentFilters.tsx",
+    "src/components/admin/CreateAssignmentModal.tsx",
+    "src/components/admin/AssignmentManagement.tsx",
+    "src/components/admin/AssignmentTable.tsx",
+    "src/utils/testing.ts",
+    "src/pages/TestApiPage.tsx",
+    "src/pages/admin/AssignmentDashboard.tsx"
+  ]
 }

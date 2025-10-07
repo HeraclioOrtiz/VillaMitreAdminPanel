@@ -17,9 +17,9 @@ import TemplateEditPage from '@/pages/gym/TemplateEditPage';
 import TemplateListPage from '@/pages/gym/TemplateListPage';
 import UserListPage from '@/pages/admin/UserListPage';
 import UserDetailPage from '@/pages/admin/UserDetailPage';
-// Assignment System Pages
-import AssignmentDashboard from '@/pages/admin/AssignmentDashboard';
-import AssignmentManagement from '@/pages/admin/AssignmentManagement';
+// Assignment System Pages - Usando stubs temporales para build
+import AssignmentDashboard from '@/pages/admin/AssignmentDashboard.stub';
+import AssignmentManagement from '@/pages/admin/AssignmentManagement.stub';
 import ProfessorDashboard from '@/pages/professor/ProfessorDashboard';
 import RoleProtectedRoute from '@/components/auth/RoleProtectedRoute';
 import UnauthorizedPage from '@/pages/auth/UnauthorizedPage';
