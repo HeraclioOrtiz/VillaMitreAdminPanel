@@ -10,8 +10,6 @@ class ApiClient {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        // Header requerido para localtunnel
-        'Bypass-Tunnel-Reminder': 'true',
       },
     });
 
@@ -23,11 +21,6 @@ class ApiClient {
     this.client.interceptors.request.use((config) => {
       const token = localStorage.getItem('auth_token');
       
-      // Asegurar que el header de bypass esté presente en todas las requests
-      if (!config.headers['Bypass-Tunnel-Reminder']) {
-        config.headers['Bypass-Tunnel-Reminder'] = 'true';
-      }
-      
       if (import.meta.env.VITE_DEBUG_API === 'true') {
         console.log('🔐 API Request Debug:', {
           url: config.url,
@@ -36,8 +29,7 @@ class ApiClient {
           method: config.method?.toUpperCase(),
           headers: config.headers,
           hasToken: !!token,
-          tokenPreview: token ? `${token.substring(0, 20)}...` : 'NO TOKEN',
-          bypassHeader: config.headers['Bypass-Tunnel-Reminder']
+          tokenPreview: token ? `${token.substring(0, 20)}...` : 'NO TOKEN'
         });
       }
       
@@ -111,7 +103,6 @@ class ApiClient {
     const response = await this.client.post(url, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
-        'Bypass-Tunnel-Reminder': 'true',
       },
     });
     return response.data;
