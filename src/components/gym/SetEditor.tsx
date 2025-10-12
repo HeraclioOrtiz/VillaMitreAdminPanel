@@ -287,33 +287,7 @@ const SetEditor = ({
                   </FormField>
                 </div>
 
-                {/* Duración */}
-                <div>
-                  <FormField label="Duración (seg)">
-                    <div className="relative">
-                      <input
-                        type="number"
-                        value={set.duration || ''}
-                        onChange={(e) => updateSet(set.id!, { duration: parseInt(e.target.value) || undefined })}
-                        placeholder="30"
-                        min="1"
-                        disabled={disabled}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-villa-mitre-500 focus:border-villa-mitre-500 disabled:bg-gray-100"
-                      />
-                      {sets.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => copyToAllSets(set.id!, 'duration')}
-                          disabled={disabled}
-                          className="absolute right-1 top-1 p-1 text-xs text-gray-400 hover:text-gray-600 disabled:opacity-50"
-                          title="Copiar a todas las series"
-                        >
-                          ↓
-                        </button>
-                      )}
-                    </div>
-                  </FormField>
-                </div>
+                {/* ❌ CAMPO ELIMINADO: "duration" NO existe en gym_daily_template_sets */}
 
                 {/* Descanso */}
                 <div>
@@ -346,7 +320,7 @@ const SetEditor = ({
 
               {/* Advanced Configuration */}
               <div className="mt-4 pt-4 border-t border-gray-100">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* RPE */}
                   <div>
                     <FormField label="RPE (1-10)" helperText="Esfuerzo percibido">
@@ -366,36 +340,7 @@ const SetEditor = ({
                     </FormField>
                   </div>
 
-                  {/* CAMPO REMOVIDO: Tempo ya no se usa en sets según backend 2025-10-06 */}
-                  {/* 
-                  <div>
-                    <FormField label="Tempo" helperText="Ej: 2-1-2-1">
-                      <input
-                        type="text"
-                        value={set.tempo || ''}
-                        onChange={(e) => updateSet(set.id!, { tempo: e.target.value || undefined })}
-                        placeholder="2-1-2-1"
-                        disabled={disabled}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-villa-mitre-500 focus:border-villa-mitre-500 disabled:bg-gray-100"
-                      />
-                    </FormField>
-                  </div>
-                  */}
-
-                  {/* Distancia */}
-                  <div>
-                    <FormField label="Distancia (m)" helperText="Para cardio">
-                      <input
-                        type="number"
-                        value={set.distance || ''}
-                        onChange={(e) => updateSet(set.id!, { distance: parseInt(e.target.value) || undefined })}
-                        placeholder="100"
-                        min="1"
-                        disabled={disabled}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-villa-mitre-500 focus:border-villa-mitre-500 disabled:bg-gray-100"
-                      />
-                    </FormField>
-                  </div>
+                  {/* ❌ CAMPOS ELIMINADOS: duration, distance, tempo NO existen en gym_daily_template_sets */}
                 </div>
 
                 {/* Notas */}
@@ -448,10 +393,9 @@ const SetEditor = ({
               <li><strong>Reps:</strong> Número de repeticiones por serie</li>
               <li><strong>Peso Objetivo:</strong> Carga recomendada en kilogramos</li>
               <li><strong>Rango de Peso:</strong> Peso mínimo y máximo permitido (útil para progresiones)</li>
-              <li><strong>Duración:</strong> Tiempo en segundos para ejercicios isométricos o cardio</li>
-              <li><strong>Descanso:</strong> Tiempo de recuperación entre series</li>
+              <li><strong>Descanso:</strong> Tiempo de recuperación entre series en segundos</li>
               <li><strong>RPE:</strong> Esfuerzo percibido del 1 al 10 (Rate of Perceived Exertion)</li>
-              <li><strong>Distancia:</strong> Para ejercicios de cardio en metros</li>
+              <li><strong>Notas:</strong> Instrucciones específicas para esta serie</li>
             </ul>
           </div>
         </div>

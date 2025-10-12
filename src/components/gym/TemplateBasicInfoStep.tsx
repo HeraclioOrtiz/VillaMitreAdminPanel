@@ -1,15 +1,13 @@
-import React, { useEffect, useState, memo, useMemo, useCallback } from 'react';
-import { FormField, MultiSelect } from '@/components/ui';
+import React, { useEffect, useState, memo, useCallback, useRef } from 'react';
+import { FormField } from '@/components/ui';
 import { 
   PRIMARY_GOALS, 
-  INTENSITY_LEVELS, 
   DIFFICULTY_LEVELS,
   type TemplateFormData 
 } from '@/types/template';
 import {
   ClockIcon,
   TagIcon,
-  CogIcon,
   InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 
@@ -21,43 +19,8 @@ interface TemplateBasicInfoStepProps {
   isLoading?: boolean;
 }
 
-// Opciones predefinidas para los selects - MEMOIZADAS
-const MUSCLE_GROUP_OPTIONS = [
-  { value: 'chest', label: 'Pecho' },
-  { value: 'back', label: 'Espalda' },
-  { value: 'shoulders', label: 'Hombros' },
-  { value: 'biceps', label: 'Bíceps' },
-  { value: 'triceps', label: 'Tríceps' },
-  { value: 'legs', label: 'Piernas' },
-  { value: 'glutes', label: 'Glúteos' },
-  { value: 'core', label: 'Core' },
-  { value: 'cardio', label: 'Cardio' },
-  { value: 'full-body', label: 'Cuerpo Completo' },
-];
-
-const EQUIPMENT_OPTIONS = [
-  { value: 'barbell', label: 'Barra' },
-  { value: 'dumbbell', label: 'Mancuernas' },
-  { value: 'kettlebell', label: 'Kettlebell' },
-  { value: 'cable', label: 'Polea' },
-  { value: 'machine', label: 'Máquina' },
-  { value: 'bodyweight', label: 'Peso Corporal' },
-  { value: 'resistance-band', label: 'Banda Elástica' },
-  { value: 'medicine-ball', label: 'Pelota Medicinal' },
-  { value: 'suspension', label: 'Suspensión (TRX)' },
-  { value: 'cardio-equipment', label: 'Equipo Cardio' },
-];
-
-const SECONDARY_GOALS_OPTIONS = [
-  { value: 'mobility', label: 'Movilidad' },
-  { value: 'balance', label: 'Equilibrio' },
-  { value: 'coordination', label: 'Coordinación' },
-  { value: 'speed', label: 'Velocidad' },
-  { value: 'agility', label: 'Agilidad' },
-  { value: 'rehabilitation', label: 'Rehabilitación' },
-  { value: 'weight-loss', label: 'Pérdida de Peso' },
-  { value: 'muscle-gain', label: 'Ganancia Muscular' },
-];
+// Opciones eliminadas: MUSCLE_GROUP_OPTIONS, EQUIPMENT_OPTIONS, SECONDARY_GOALS_OPTIONS
+// Motivo: Campos que no existen en el backend
 
 const TemplateBasicInfoStep = memo<TemplateBasicInfoStepProps>(function TemplateBasicInfoStep({
   data,
@@ -66,6 +29,9 @@ const TemplateBasicInfoStep = memo<TemplateBasicInfoStepProps>(function Template
   errors = [],
   isLoading = false,
 }) {
+
+  // Ref para trackear si ya inicializamos con datos externos
+  const isInitializedFromProps = useRef(false);
 
   const [formData, setFormData] = useState<Partial<TemplateFormData>>({
     name: '',
@@ -79,31 +45,50 @@ const TemplateBasicInfoStep = memo<TemplateBasicInfoStepProps>(function Template
     intensity_level: 'moderate',
     tags: [],
     is_public: false,
+    warm_up_notes: '',
+    cool_down_notes: '',
+    progression_notes: '',
     ...data,
   });
 
-  // Validar formulario
-  const validateForm = () => {
+  // Actualizar formData cuando data cambia (modo edición) - solo una vez
+  useEffect(() => {
+    if (!isInitializedFromProps.current && data && Object.keys(data).length > 0 && data.name) {
+      console.log('📝 TemplateBasicInfoStep: Inicializando con datos:', data);
+      setFormData(prev => ({
+        ...prev,
+        ...data,
+      }));
+      isInitializedFromProps.current = true;
+    }
+  }, [data.name]); // Solo cuando llega el nombre (indica datos válidos)
+
+  // Validar formulario - SOLO validar campos que EXISTEN en el backend
+  const validateForm = useCallback(() => {
     const isValid = !!(
-      formData.name?.trim() &&
-      formData.estimated_duration &&
+      formData.name?.trim() &&  // ✅ Backend: title (requerido)
+      formData.estimated_duration &&  // ✅ Backend: estimated_duration_min
       formData.estimated_duration > 0 &&
-      formData.difficulty &&
-      formData.primary_goal &&
-      formData.intensity_level &&
-      formData.target_muscle_groups?.length &&
-      formData.equipment_needed?.length
+      formData.difficulty &&  // ✅ Backend: level (requerido)
+      formData.primary_goal  // ✅ Backend: goal (requerido)
+      // ❌ NO validar intensity_level (no existe en backend)
+      // ❌ NO validar target_muscle_groups (no existe en backend)
+      // ❌ NO validar equipment_needed (no existe en backend)
     );
 
     onValidationChange?.(isValid);
     return isValid;
-  };
+  }, [formData, onValidationChange]);
 
-  // Actualizar datos cuando cambia el formulario
+  // Actualizar datos cuando cambia el formulario - SOLO si ya inicializamos
   useEffect(() => {
-    onDataChange(formData);
-    validateForm();
-  }, [formData]);
+    // Evitar loops: solo notificar cambios después de la carga inicial
+    if (formData.name && formData.name.trim().length > 0) {
+      onDataChange(formData);
+      validateForm();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData]); // Solo formData como dependencia
 
   const handleFieldChange = useCallback((field: keyof TemplateFormData, value: any) => {
     setFormData(prev => ({
@@ -148,18 +133,7 @@ const TemplateBasicInfoStep = memo<TemplateBasicInfoStepProps>(function Template
             </FormField>
           </div>
 
-          <div className="md:col-span-2">
-            <FormField label="Descripción">
-              <textarea
-                value={formData.description || ''}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleFieldChange('description', e.target.value)}
-                placeholder="Describe el propósito y características de esta plantilla..."
-                rows={3}
-                disabled={isLoading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-villa-mitre-500 focus:border-villa-mitre-500 disabled:bg-gray-100 disabled:cursor-not-allowed resize-vertical"
-              />
-            </FormField>
-          </div>
+          {/* ❌ CAMPO 'description' eliminado - NO existe en el backend */}
 
           <div>
             <FormField label="Duración Estimada (minutos)" required>
@@ -209,7 +183,7 @@ const TemplateBasicInfoStep = memo<TemplateBasicInfoStepProps>(function Template
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
+          <div className="md:col-span-2">
             <FormField label="Objetivo Principal" required>
               <select
                 value={formData.primary_goal || ''}
@@ -224,70 +198,6 @@ const TemplateBasicInfoStep = memo<TemplateBasicInfoStepProps>(function Template
                   </option>
                 ))}
               </select>
-            </FormField>
-          </div>
-
-          <div>
-            <FormField label="Nivel de Intensidad" required>
-              <select
-                value={formData.intensity_level || ''}
-                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleFieldChange('intensity_level', e.target.value)}
-                disabled={isLoading}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-villa-mitre-500 focus:border-villa-mitre-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-              >
-                <option value="">Selecciona una intensidad</option>
-                {INTENSITY_LEVELS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </FormField>
-          </div>
-
-          <div className="md:col-span-2">
-            <FormField label="Objetivos Secundarios">
-              <MultiSelect
-                value={formData.secondary_goals || []}
-                onChange={(values) => handleFieldChange('secondary_goals', values)}
-                options={SECONDARY_GOALS_OPTIONS}
-                placeholder="Selecciona objetivos adicionales..."
-                disabled={isLoading}
-              />
-            </FormField>
-          </div>
-        </div>
-      </div>
-
-      {/* Grupos musculares y equipamiento */}
-      <div className="bg-gray-50 rounded-lg p-6">
-        <div className="flex items-center mb-4">
-          <CogIcon className="w-5 h-5 text-villa-mitre-600 mr-2" />
-          <h3 className="text-lg font-medium text-gray-900">Grupos Musculares y Equipamiento</h3>
-        </div>
-        
-        <div className="grid grid-cols-1 gap-6">
-          <div>
-            <FormField label="Grupos Musculares Objetivo" required>
-              <MultiSelect
-                value={formData.target_muscle_groups || []}
-                onChange={(values) => handleFieldChange('target_muscle_groups', values)}
-                options={MUSCLE_GROUP_OPTIONS}
-                placeholder="Selecciona los grupos musculares que trabajará esta plantilla..."
-                disabled={isLoading}
-              />
-            </FormField>
-          </div>
-
-          <div>
-            <FormField label="Equipamiento Necesario" required>
-              <MultiSelect
-                value={formData.equipment_needed || []}
-                onChange={(values) => handleFieldChange('equipment_needed', values)}
-                options={EQUIPMENT_OPTIONS}
-                placeholder="Selecciona el equipamiento que se necesita..."
-                disabled={isLoading}
-              />
             </FormField>
           </div>
         </div>
@@ -338,6 +248,8 @@ const TemplateBasicInfoStep = memo<TemplateBasicInfoStepProps>(function Template
         </div>
       </div>
 
+      {/* ❌ SECCIÓN 'warm_up_notes', 'cool_down_notes', 'progression_notes' eliminada - NO existen en el backend */}
+
       {/* Información de ayuda */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex items-start">
@@ -346,8 +258,7 @@ const TemplateBasicInfoStep = memo<TemplateBasicInfoStepProps>(function Template
             <p className="font-medium mb-1">Consejos para crear una buena plantilla:</p>
             <ul className="list-disc list-inside space-y-1 text-xs">
               <li>Usa un nombre descriptivo que indique el objetivo y nivel</li>
-              <li>Selecciona grupos musculares específicos para mejor organización</li>
-              <li>Considera el equipamiento disponible en tu gimnasio</li>
+              <li>Los grupos musculares y equipamiento se determinarán al agregar ejercicios</li>
               <li>Los tags ayudan a encontrar la plantilla más rápidamente</li>
               <li>Las plantillas públicas pueden ser útiles para otros profesores</li>
             </ul>

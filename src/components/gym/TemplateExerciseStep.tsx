@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import ExerciseSelector from './ExerciseSelector';
 import { useSortableList, type DragItem, type DropZone } from '@/hooks/useDragAndDrop';
 import type { Exercise } from '@/types/exercise';
@@ -29,9 +29,21 @@ const TemplateExerciseStep = ({
   isLoading = false,
 }: TemplateExerciseStepProps) => {
 
+  // Ref para trackear si ya inicializamos con datos externos
+  const isInitializedFromProps = useRef(false);
+
   const [selectedExercises, setSelectedExercises] = useState<any[]>(
     data.exercises || []
   );
+
+  // Actualizar selectedExercises cuando data.exercises cambia (modo edición) - solo una vez
+  useEffect(() => {
+    if (!isInitializedFromProps.current && data.exercises && data.exercises.length > 0) {
+      console.log('📝 TemplateExerciseStep: Inicializando con ejercicios:', data.exercises);
+      setSelectedExercises(data.exercises);
+      isInitializedFromProps.current = true;
+    }
+  }, [data.exercises?.length]); // Solo cuando cambia la cantidad de ejercicios
 
   // Sortable list for selected exercises with proper id mapping
   const sortableExercises = selectedExercises.map(ex => ({
@@ -65,19 +77,23 @@ const TemplateExerciseStep = ({
   }, [selectedExercises.length, sortableItems.length, setSortableItems, selectedExercises]);
 
   // Validate step
-  const validateStep = () => {
+  const validateStep = useCallback(() => {
     const isValid = selectedExercises.length > 0;
     onValidationChange?.(isValid);
     return isValid;
-  };
+  }, [selectedExercises, onValidationChange]);
 
-  // Update parent data when exercises change
+  // Update parent data when exercises change - evitar loops
   useEffect(() => {
-    onDataChange({
-      exercises: selectedExercises,
-    });
-    validateStep();
-  }, [selectedExercises]);
+    // Solo notificar después de la carga inicial
+    if (selectedExercises.length >= 0) {
+      onDataChange({
+        exercises: selectedExercises,
+      });
+      validateStep();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedExercises]); // Solo selectedExercises
 
   // Handle exercise selection from selector
   const handleExerciseSelect = (exercise: Exercise) => {

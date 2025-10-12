@@ -444,6 +444,140 @@ export const useAssignTemplate = (options?: {
 };
 
 /**
+ * Hook para obtener detalles de una asignación de plantilla específica
+ */
+export const useTemplateAssignment = (id: number) => {
+  const queryKey = useMemo(() => ['assignments', 'template-assignment', id], [id]);
+  const queryFn = useCallback(async () => {
+    const result = await assignmentService.getTemplateAssignment(id);
+    return result;
+  }, [id]);
+
+  return useQuery<TemplateAssignment>({
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    staleTime: 2 * 60 * 1000, // 2 minutos
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+};
+
+/**
+ * Hook para actualizar asignación de plantilla
+ */
+export const useUpdateTemplateAssignment = (options?: {
+  onSuccess?: (templateAssignment: TemplateAssignment) => void;
+  onError?: (error: any) => void;
+}) => {
+  const queryClient = useQueryClient();
+
+  const mutationFn = useCallback(
+    ({ id, data }: { id: number; data: UpdateTemplateAssignmentRequest }) => 
+      assignmentService.updateTemplateAssignment(id, data),
+    []
+  );
+
+  const onSuccess = useCallback(
+    (templateAssignment: TemplateAssignment) => {
+      // Invalidar queries relacionadas
+      queryClient.invalidateQueries({ queryKey: assignmentKeys.professorStudents() });
+      queryClient.invalidateQueries({ queryKey: assignmentKeys.todaySessions() });
+      
+      // Invalidar calendario semanal
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          query.queryKey[0] === 'assignments' && 
+          query.queryKey[1] === 'weekly-calendar'
+      });
+      
+      // Invalidar progreso del estudiante
+      if (templateAssignment.professor_student_assignment?.student_id) {
+        queryClient.invalidateQueries({ 
+          queryKey: assignmentKeys.studentProgress(templateAssignment.professor_student_assignment.student_id) 
+        });
+      }
+      
+      options?.onSuccess?.(templateAssignment);
+    },
+    [queryClient, options?.onSuccess]
+  );
+
+  const onError = useCallback(
+    (error: any) => {
+      console.error('Error updating template assignment:', error);
+      options?.onError?.(error);
+    },
+    [options?.onError]
+  );
+
+  return useMutation({
+    mutationFn,
+    onSuccess,
+    onError,
+  });
+};
+
+/**
+ * Hook para desasignar plantilla de un estudiante
+ * Elimina la asignación de plantilla completa
+ */
+export const useUnassignTemplate = (options?: {
+  onSuccess?: (deletedId: number) => void;
+  onError?: (error: any) => void;
+}) => {
+  const queryClient = useQueryClient();
+
+  const mutationFn = useCallback(
+    async (templateAssignmentId: number) => {
+      // ✅ Endpoint implementado: DELETE /professor/assignments/{id}
+      return assignmentService.deleteTemplateAssignment(templateAssignmentId);
+    },
+    []
+  );
+
+  const onSuccess = useCallback(
+    (data: { message: string; student_name: string; template_title: string }, deletedId: number) => {
+      // Invalidar queries relacionadas
+      queryClient.invalidateQueries({ queryKey: assignmentKeys.professorStudents() });
+      queryClient.invalidateQueries({ queryKey: assignmentKeys.professorStats() });
+      queryClient.invalidateQueries({ queryKey: assignmentKeys.todaySessions() });
+      
+      // Invalidar calendario semanal (todas las semanas)
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          query.queryKey[0] === 'assignments' && 
+          query.queryKey[1] === 'weekly-calendar'
+      });
+      
+      // Invalidar todas las asignaciones de plantillas de estudiantes
+      queryClient.invalidateQueries({ 
+        predicate: (query) => 
+          query.queryKey[0] === 'assignments' && 
+          query.queryKey[1] === 'student-template-assignments'
+      });
+      
+      options?.onSuccess?.(deletedId);
+    },
+    [queryClient, options?.onSuccess]
+  );
+
+  const onError = useCallback(
+    (error: any) => {
+      console.error('Error unassigning template:', error);
+      options?.onError?.(error);
+    },
+    [options?.onError]
+  );
+
+  return useMutation({
+    mutationFn,
+    onSuccess,
+    onError,
+  });
+};
+
+/**
  * Hook para obtener progreso de un estudiante
  */
 export const useStudentProgress = (studentId: number) => {

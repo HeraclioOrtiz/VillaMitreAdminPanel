@@ -10,6 +10,10 @@ class ApiClient {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        // Headers anti-caché para evitar que datos sensibles se guarden
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
       },
     });
 
@@ -69,10 +73,27 @@ class ApiClient {
           console.error('  Full Error:', error);
         }
         
+        // Manejo de errores de autenticación
         if (error.response?.status === 401) {
+          console.warn('⚠️ 401 Unauthorized detected - Session expired or invalid');
+          
+          // Limpiar tokens del storage
           localStorage.removeItem('auth_token');
-          window.location.href = '/login';
+          localStorage.removeItem('auth_user');
+          
+          // Emitir evento personalizado para que AuthProvider maneje la redirección
+          // Esto evita el hard redirect y permite navegación controlada con React Router
+          window.dispatchEvent(
+            new CustomEvent('auth:unauthorized', {
+              detail: {
+                error: error.response?.data,
+                url: error.config?.url,
+                status: error.response?.status,
+              },
+            })
+          );
         }
+        
         return Promise.reject(error);
       }
     );

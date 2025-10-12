@@ -10,7 +10,7 @@ import type { DailyTemplate } from './template';
 
 export type AssignmentStatus = 'active' | 'paused' | 'completed' | 'cancelled';
 export type SessionStatus = 'pending' | 'completed' | 'skipped';
-export type WeekDay = 1 | 2 | 3 | 4 | 5 | 6 | 7; // Lun=1, Dom=7
+export type WeekDay = 0 | 1 | 2 | 3 | 4 | 5 | 6; // Dom=0, Lun=1, ... Sáb=6 (Según backend)
 
 // ===== ENTIDADES PRINCIPALES =====
 
@@ -49,7 +49,7 @@ export interface TemplateAssignment {
   daily_template_id: number;
   start_date: string;
   end_date?: string;
-  frequency: WeekDay[]; // [1,3,5] = Lun, Mie, Vie
+  frequency: WeekDay[]; // [1,3,5] = Lun, Mié, Vie (0=Dom, 1=Lun, ... 6=Sáb)
   status: AssignmentStatus;
   professor_notes?: string;
   created_at: string;
@@ -168,7 +168,7 @@ export interface AssignTemplateRequest {
   daily_template_id: number;
   start_date: string;
   end_date?: string;
-  frequency: WeekDay[]; // [1,3,5] = Lun, Mie, Vie
+  frequency: WeekDay[]; // [1,3,5] = Lun, Mié, Vie (0=Dom, 1=Lun, ... 6=Sáb)
   professor_notes?: string;
 }
 
@@ -267,7 +267,7 @@ export const WEEK_DAYS = [
   { value: 4, label: 'Jueves', short: 'J' },
   { value: 5, label: 'Viernes', short: 'V' },
   { value: 6, label: 'Sábado', short: 'S' },
-  { value: 7, label: 'Domingo', short: 'D' },
+  { value: 0, label: 'Domingo', short: 'D' },
 ] as const;
 
 // ===== UTILIDADES =====

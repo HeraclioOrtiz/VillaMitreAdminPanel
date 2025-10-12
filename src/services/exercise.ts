@@ -69,6 +69,8 @@ const EXERCISE_ENDPOINTS = {
   show: (id: number) => `/admin/gym/exercises/${id}`,
   update: (id: number) => `/admin/gym/exercises/${id}`,
   delete: (id: number) => `/admin/gym/exercises/${id}`,
+  deleteForce: (id: number) => `/admin/gym/exercises/${id}/force`,
+  dependencies: (id: number) => `/admin/gym/exercises/${id}/dependencies`,
   duplicate: (id: number) => `/admin/gym/exercises/${id}/duplicate`,
   bulkDelete: '/admin/gym/exercises/bulk-delete',
 } as const;
@@ -116,10 +118,25 @@ export const exerciseService = {
     try {
       const response = await apiClient.get(EXERCISE_ENDPOINTS.show(id));
       
-      // Verificar si viene en un wrapper o directamente y transformar
-      const rawExercise = response.data.exercise || response.data;
+      console.log('📥 getExercise response:', response);
+      
+      // La API puede devolver los datos directamente o con wrapper
+      let rawExercise;
+      
+      if ('id' in response && 'name' in response) {
+        // Los datos están directamente en response
+        rawExercise = response;
+      } else if (response.data) {
+        // Los datos están en response.data o response.data.exercise
+        rawExercise = response.data.exercise || response.data;
+      } else {
+        throw new Error('Formato de respuesta no válido');
+      }
+      
+      console.log('✅ rawExercise:', rawExercise);
       return transformExerciseData(rawExercise);
     } catch (error) {
+      console.error('❌ Error in getExercise:', error);
       throw new Error('Error al cargar el ejercicio');
     }
   },
@@ -130,10 +147,21 @@ export const exerciseService = {
   async createExercise(data: ExerciseFormData): Promise<Exercise> {
     try {
       const transformedData = transformFormDataForBackend(data);
-      const responseData = await apiClient.post(EXERCISE_ENDPOINTS.create, transformedData);
+      const response = await apiClient.post(EXERCISE_ENDPOINTS.create, transformedData);
       
-      // Extraer ejercicio de la respuesta y transformar
-      const rawExercise = responseData.data || responseData;
+      console.log('📥 createExercise response:', response);
+      
+      // La API puede devolver los datos directamente o con wrapper
+      let rawExercise;
+      if ('id' in response && 'name' in response) {
+        rawExercise = response;
+      } else if (response.data) {
+        rawExercise = response.data.exercise || response.data;
+      } else {
+        throw new Error('Formato de respuesta no válido');
+      }
+      
+      console.log('✅ rawExercise created:', rawExercise);
       return transformExerciseData(rawExercise);
     } catch (error: any) {
       if (error.response?.status === 422) {
@@ -150,10 +178,21 @@ export const exerciseService = {
   async updateExercise(id: number, data: ExerciseFormData): Promise<Exercise> {
     try {
       const transformedData = transformFormDataForBackend(data);
-      const responseData = await apiClient.put(EXERCISE_ENDPOINTS.update(id), transformedData);
+      const response = await apiClient.put(EXERCISE_ENDPOINTS.update(id), transformedData);
       
-      // Extraer ejercicio de la respuesta y transformar
-      const rawExercise = responseData.data || responseData;
+      console.log('📥 updateExercise response:', response);
+      
+      // La API puede devolver los datos directamente o con wrapper
+      let rawExercise;
+      if ('id' in response && 'name' in response) {
+        rawExercise = response;
+      } else if (response.data) {
+        rawExercise = response.data.exercise || response.data;
+      } else {
+        throw new Error('Formato de respuesta no válido');
+      }
+      
+      console.log('✅ rawExercise updated:', rawExercise);
       return transformExerciseData(rawExercise);
     } catch (error: any) {
       
@@ -184,8 +223,23 @@ export const exerciseService = {
   async duplicateExercise(id: number): Promise<Exercise> {
     try {
       const response = await apiClient.post(EXERCISE_ENDPOINTS.duplicate(id));
-      return response.data.exercise;
+      
+      console.log('📥 duplicateExercise response:', response);
+      
+      // La API puede devolver los datos directamente o con wrapper
+      let rawExercise;
+      if ('id' in response && 'name' in response) {
+        rawExercise = response;
+      } else if (response.data) {
+        rawExercise = response.data.exercise || response.data;
+      } else {
+        throw new Error('Formato de respuesta no válido');
+      }
+      
+      console.log('✅ rawExercise duplicated:', rawExercise);
+      return transformExerciseData(rawExercise);
     } catch (error) {
+      console.error('❌ Error in duplicateExercise:', error);
       throw new Error('Error al duplicar el ejercicio');
     }
   },
@@ -214,6 +268,78 @@ export const exerciseService = {
       return response.data;
     } catch (error) {
       throw new Error('Error al exportar los ejercicios');
+    }
+  },
+
+  /**
+   * Verifica las dependencias de un ejercicio antes de eliminarlo
+   * Retorna información sobre plantillas que usan el ejercicio
+   */
+  async checkExerciseDependencies(id: number): Promise<{
+    can_delete: boolean;
+    dependencies: {
+      daily_templates: number;
+    };
+    total_references: number;
+    exercise: {
+      id: number;
+      name: string;
+    };
+  }> {
+    try {
+      const response = await apiClient.get(EXERCISE_ENDPOINTS.dependencies(id));
+      
+      // La API puede devolver los datos directamente o con wrapper
+      // Si ya tiene can_delete, los datos están en el nivel superior
+      if ('can_delete' in response) {
+        return response as any;
+      }
+      
+      // Si no, están en response.data
+      return response.data;
+    } catch (error) {
+      console.error('Error checking dependencies:', error);
+      throw new Error('Error al verificar dependencias del ejercicio');
+    }
+  },
+
+  /**
+   * Elimina un ejercicio forzadamente (solo admin)
+   * IMPORTANTE: Elimina también todas las plantillas que lo usan y sus asignaciones
+   */
+  async deleteExerciseForce(id: number): Promise<{
+    success: boolean;
+    message: string;
+    warning?: string;
+    deleted: {
+      exercise: number;
+      templates: number;
+      assignments: number;
+    };
+  }> {
+    try {
+      const response = await apiClient.delete(EXERCISE_ENDPOINTS.deleteForce(id));
+      
+      console.log('📥 deleteExerciseForce response:', response);
+      
+      // La API puede devolver los datos directamente o con wrapper
+      if ('success' in response && 'message' in response) {
+        return response as any;
+      }
+      
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Error in deleteExerciseForce:', error);
+      
+      // Si el backend responde con 403 (permisos insuficientes)
+      if (error?.response?.status === 403) {
+        const message = error.response?.data?.message || 'No tienes permisos para realizar eliminación forzada';
+        throw new Error(message);
+      }
+      
+      // Otros errores
+      const message = error.response?.data?.message || error.message || 'Error al eliminar el ejercicio';
+      throw new Error(message);
     }
   },
 };

@@ -195,9 +195,7 @@ const TemplateCard = memo<TemplateCardProps>(function TemplateCard({
               )}
             </div>
 
-            <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-              {template.description || 'Sin descripción disponible'}
-            </p>
+            {/* ❌ CAMPO ELIMINADO: 'description' NO existe en gym_daily_templates */}
 
             {/* Tags del backend */}
             {((template as any).tags && (template as any).tags.length > 0) && (
@@ -336,17 +334,7 @@ const TemplateCard = memo<TemplateCardProps>(function TemplateCard({
             </div>
           </div>
 
-          {/* Intensity */}
-          {template.intensity_level && (
-            <div className="flex items-center">
-              <div className="flex items-center text-sm">
-                <UserGroupIcon className={`w-4 h-4 mr-1 ${getIntensityColor(template.intensity_level)}`} />
-                <span className={getIntensityColor(template.intensity_level)}>
-                  {INTENSITY_LEVELS.find(i => i.value === template.intensity_level)?.label}
-                </span>
-              </div>
-            </div>
-          )}
+          {/* ❌ CAMPO ELIMINADO: 'intensity_level' NO existe en gym_daily_templates */}
         </div>
 
         {/* Secciones adicionales */}
@@ -411,55 +399,9 @@ const TemplateCard = memo<TemplateCardProps>(function TemplateCard({
           </div>
         )}
 
-        {/* Target Muscle Groups (si existen en el backend y no hay grupos de ejercicios) */}
-        {!uniqueMuscleGroups.length && template.target_muscle_groups && template.target_muscle_groups.length > 0 && (
-          <div>
-            <h4 className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-              <UserGroupIcon className="w-3 h-3 mr-1" />
-              Grupos Musculares Objetivo
-            </h4>
-            <div className="flex flex-wrap gap-1">
-              {template.target_muscle_groups.slice(0, 3).map((group) => (
-                <span
-                  key={group}
-                  className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getMuscleGroupColor(group)}`}
-                >
-                  {group}
-                </span>
-              ))}
-              {template.target_muscle_groups.length > 3 && (
-                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                  +{template.target_muscle_groups.length - 3}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
+        {/* ❌ CAMPO ELIMINADO: 'target_muscle_groups' NO existe (se calcula desde ejercicios) */}
 
-        {/* Equipment */}
-        {template.equipment_needed && template.equipment_needed.length > 0 && (
-          <div>
-            <h4 className="text-xs font-medium text-gray-700 mb-2 flex items-center">
-              <CogIcon className="w-3 h-3 mr-1" />
-              Equipamiento
-            </h4>
-            <div className="flex flex-wrap gap-1">
-              {template.equipment_needed.slice(0, 2).map((equipment) => (
-                <span
-                  key={equipment}
-                  className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700"
-                >
-                  {equipment}
-                </span>
-              ))}
-              {template.equipment_needed.length > 2 && (
-                <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-600">
-                  +{template.equipment_needed.length - 2}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
+        {/* ❌ CAMPO ELIMINADO: 'equipment_needed' NO existe (se calcula desde ejercicios) */}
 
         {/* Tags */}
         {template.tags && template.tags.length > 0 && (

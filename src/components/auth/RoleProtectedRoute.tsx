@@ -1,5 +1,5 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 
 interface RoleProtectedRouteProps {
@@ -14,19 +14,30 @@ const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
   fallbackPath = '/unauthorized'
 }) => {
   const { user, isLoading } = useAuth();
+  const location = useLocation();
+
+  // Guardar la ruta intentada si no está autenticado
+  useEffect(() => {
+    if (!isLoading && !user) {
+      sessionStorage.setItem('redirectAfterLogin', location.pathname + location.search);
+    }
+  }, [user, isLoading, location]);
 
   // Mostrar loading mientras se verifica la autenticación
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-villa-mitre-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-villa-mitre-600 mb-4"></div>
+          <p className="text-sm text-gray-600">Verificando permisos...</p>
+        </div>
       </div>
     );
   }
 
   // Si no hay usuario, redirigir al login
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
   // Si no se especifican roles requeridos, permitir acceso

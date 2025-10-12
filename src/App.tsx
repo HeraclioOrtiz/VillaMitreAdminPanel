@@ -21,43 +21,23 @@ import UserDetailPage from '@/pages/admin/UserDetailPage';
 import AssignmentDashboard from '@/pages/admin/AssignmentDashboard.stub';
 import AssignmentManagement from '@/pages/admin/AssignmentManagement.stub';
 import ProfessorDashboard from '@/pages/professor/ProfessorDashboard';
+import MyStudentsPage from '@/pages/professor/MyStudentsPage';
 import RoleProtectedRoute from '@/components/auth/RoleProtectedRoute';
 import UnauthorizedPage from '@/pages/auth/UnauthorizedPage';
 import SmartRedirect from '@/components/auth/SmartRedirect';
+import { AuthErrorBoundary } from '@/components/auth/AuthErrorBoundary';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
-// Crear cliente de React Query
+// Crear cliente de React Query con configuración mejorada
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutos
     },
   },
 });
-
-// Componente para proteger rutas
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth();
-  
-  console.log('🔒 ProtectedRoute - isAuthenticated:', isAuthenticated, 'isLoading:', isLoading);
-
-  if (isLoading) {
-    console.log('🔒 ProtectedRoute - Showing loading state');
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-villa-mitre-600"></div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    console.log('🔒 ProtectedRoute - Not authenticated, redirecting to login');
-    return <Navigate to="/login" replace />;
-  }
-
-  console.log('🔒 ProtectedRoute - Authenticated, rendering children');
-  return <>{children}</>;
-}
 
 // Componente para redirigir al dashboard apropiado
 function DashboardRedirect() {
@@ -76,10 +56,11 @@ function DashboardRedirect() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ToastProvider>
-          <Router>
-            <Routes>
+      <Router>
+        <AuthProvider>
+          <AuthErrorBoundary>
+            <ToastProvider>
+              <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/" element={<Navigate to="/gym/dashboard" replace />} />
               
@@ -251,6 +232,19 @@ function App() {
                 } 
               />
               
+              <Route 
+                path="/professor/students" 
+                element={
+                  <ProtectedRoute>
+                    <RoleProtectedRoute requiredRoles={['professor', 'admin', 'super_admin']}>
+                      <MainLayout>
+                        <MyStudentsPage />
+                      </MainLayout>
+                    </RoleProtectedRoute>
+                  </ProtectedRoute>
+                } 
+              />
+              
               {/* Unauthorized Page */}
               <Route 
                 path="/unauthorized" 
@@ -360,12 +354,13 @@ function App() {
               {/* Catch all */}
               <Route path="*" element={<Navigate to="/gym/dashboard" replace />} />
             </Routes>
-          </Router>
-          
-          {/* Toast Container */}
-          <ToastContainer />
-        </ToastProvider>
+            
+            {/* Toast Container */}
+            <ToastContainer />
+          </ToastProvider>
+        </AuthErrorBoundary>
       </AuthProvider>
+    </Router>
     </QueryClientProvider>
   );
 }

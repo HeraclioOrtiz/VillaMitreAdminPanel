@@ -59,17 +59,22 @@ const EditTemplateWizard: React.FC<EditTemplateWizardProps> = ({
     validateOnNext: true,
   });
 
-  // Inicializar datos cuando se monta el componente
+  // Ref para trackear si ya inicializamos los datos
+  const isInitialized = useRef(false);
+
+  // Inicializar datos cuando se monta el componente (solo una vez)
   useEffect(() => {
-    if (initialData && Object.keys(initialData).length > 0) {
+    if (!isInitialized.current && initialData && Object.keys(initialData).length > 0) {
+      console.log('🔧 Inicializando wizard con datos:', initialData);
       // Distribuir los datos iniciales a los pasos correspondientes
       wizardActions.updateStepData('basic-info', initialData);
       if (initialData.exercises) {
         wizardActions.updateStepData('exercises', { exercises: initialData.exercises });
         wizardActions.updateStepData('sets-config', { exercises: initialData.exercises });
       }
+      isInitialized.current = true;
     }
-  }, [initialData, wizardActions]);
+  }, [initialData]); // Solo depende de initialData
 
   // Manejar finalización del wizard
   const handleComplete = async () => {
@@ -240,17 +245,24 @@ const TemplateEditPage = () => {
   // Convertir DailyTemplate a TemplateFormData cuando se carga
   useEffect(() => {
     if (template) {
+      console.log('📥 Template recibida del backend:', template);
+      
       const formData: Partial<TemplateFormData> = {
-        name: template.name || template.title, // Backend usa 'title', frontend usa 'name'
+        // Información básica
+        name: template.name,
         description: template.description,
-        difficulty: template.difficulty || template.level, // Backend usa 'level', frontend usa 'difficulty'
-        estimated_duration: template.estimated_duration_min, // Backend usa 'estimated_duration_min'
-        primary_goal: (template.primary_goal || template.goal) as 'strength' | 'hypertrophy' | 'endurance' | 'power' | 'flexibility' | 'cardio' | undefined, // Backend usa 'goal', frontend usa 'primary_goal'
+        difficulty: template.difficulty,
+        estimated_duration: template.estimated_duration,
+        primary_goal: template.primary_goal,
+        
+        // Arrays y configuración
         secondary_goals: template.secondary_goals || [],
         target_muscle_groups: template.target_muscle_groups || [],
         equipment_needed: template.equipment_needed || [],
-        intensity_level: template.intensity_level,
+        intensity_level: template.intensity_level || 'moderate',
         tags: template.tags || [],
+        
+        // Campos adicionales
         is_public: template.is_public || false,
         warm_up_notes: template.warm_up_notes || '',
         cool_down_notes: template.cool_down_notes || '',
@@ -258,8 +270,12 @@ const TemplateEditPage = () => {
         variations: template.variations || [],
         prerequisites: template.prerequisites || [],
         contraindications: template.contraindications || [],
+        
+        // Ejercicios
         exercises: template.exercises || [],
       };
+      
+      console.log('📝 FormData preparada para wizard:', formData);
       setWizardData(formData);
       setIsWizardReady(true);
     }
@@ -290,6 +306,8 @@ const TemplateEditPage = () => {
   // Manejar finalización del wizard
   const handleWizardComplete = async (data: any) => {
     try {
+      console.log('📤 Datos del wizard recibidos:', data);
+      
       // Combinar todos los datos del wizard
       const templateData: TemplateFormData = {
         ...data['basic-info'],
@@ -302,6 +320,8 @@ const TemplateEditPage = () => {
         prerequisites: data['basic-info']?.prerequisites || [],
         contraindications: data['basic-info']?.contraindications || [],
       };
+      
+      console.log('📤 TemplateFormData preparada para enviar:', templateData);
 
       await updateTemplateMutation.mutateAsync({ 
         id: templateId, 

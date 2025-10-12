@@ -157,20 +157,30 @@ class AssignmentService {
   }
 
   /**
+   * Obtener detalles de una asignación de plantilla específica
+   * GET /professor/assignments/{id}
+   */
+  async getTemplateAssignment(id: number): Promise<TemplateAssignment> {
+    const response = await apiClient.get<TemplateAssignment>(`/professor/assignments/${id}`);
+    return response.data;
+  }
+
+  /**
    * Actualizar asignación de plantilla
-   * PUT /professor/template-assignments/{id}
+   * PUT /professor/assignments/{id}
    */
   async updateTemplateAssignment(id: number, data: UpdateTemplateAssignmentRequest): Promise<TemplateAssignment> {
-    const response = await apiClient.put<TemplateAssignment>(`/professor/template-assignments/${id}`, data);
+    const response = await apiClient.put<TemplateAssignment>(`/professor/assignments/${id}`, data);
     return response.data;
   }
 
   /**
    * Eliminar asignación de plantilla
-   * DELETE /professor/template-assignments/{id}
+   * DELETE /professor/assignments/{id}
    */
-  async deleteTemplateAssignment(id: number): Promise<void> {
-    await apiClient.delete(`/professor/template-assignments/${id}`);
+  async deleteTemplateAssignment(id: number): Promise<{ message: string; student_name: string; template_title: string }> {
+    const response = await apiClient.delete<{ message: string; student_name: string; template_title: string }>(`/professor/assignments/${id}`);
+    return response.data;
   }
 
   /**
@@ -261,9 +271,9 @@ class AssignmentService {
       errors.push('Debe seleccionar al menos un día de la semana');
     }
 
-    // Validar que los días de la semana sean válidos (1-7)
-    if (data.frequency && data.frequency.some(day => day < 1 || day > 7)) {
-      errors.push('Los días de la semana deben estar entre 1 (Lunes) y 7 (Domingo)');
+    // Validar que los días de la semana sean válidos (0-6): 0=Domingo, 1=Lunes, ... 6=Sábado
+    if (data.frequency && data.frequency.some(day => day < 0 || day > 6)) {
+      errors.push('Los días de la semana deben estar entre 0 (Domingo) y 6 (Sábado)');
     }
 
     // Validar que la fecha de inicio no sea en el pasado

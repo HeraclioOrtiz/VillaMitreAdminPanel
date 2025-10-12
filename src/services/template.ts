@@ -29,12 +29,61 @@ function transformSetData(set: any): TemplateSet {
 
 /**
  * Transforma datos de plantilla del backend para frontend
+ * Mapea los nombres de campos del backend a los del frontend
+ * ⚠️ IMPORTANTE: Solo mapear campos que EXISTEN en el backend
  */
 function transformTemplateData(template: any): DailyTemplate {
+  console.log('📥 getTemplate response:', template);
+  
   return {
-    ...template,
+    // ID y metadatos
+    id: template.id,
+    created_by: template.created_by,
+    created_at: template.created_at,
+    updated_at: template.updated_at,
+    
+    // ✅ CAMPOS QUE SÍ EXISTEN EN BACKEND:
+    // Backend usa 'title', frontend puede usar 'name' como alias
+    title: template.title,
+    name: template.title,  // Alias para compatibilidad
+    
+    // Backend usa 'level', frontend puede usar 'difficulty' como alias
+    level: template.level || 'intermediate',
+    difficulty: template.level || 'intermediate',
+    
+    // Backend usa 'goal', frontend puede usar 'primary_goal' como alias
+    goal: template.goal || 'hypertrophy',
+    primary_goal: template.goal || 'hypertrophy',
+    
+    // Backend usa 'estimated_duration_min'
+    estimated_duration_min: template.estimated_duration_min || 60,
+    estimated_duration: template.estimated_duration_min || 60,  // Alias
+    
+    // Backend usa 'tags' (JSON array)
+    tags: Array.isArray(template.tags) ? template.tags : [],
+    
+    // Backend usa 'is_preset' e 'is_public'
+    is_preset: template.is_preset || false,
+    is_public: template.is_public || false,
+    
+    // ❌ CAMPOS QUE NO EXISTEN EN BACKEND (dejar vacíos):
+    description: '',  // NO existe en backend
+    target_muscle_groups: [],  // Se calcula desde ejercicios
+    equipment_needed: [],  // Se calcula desde ejercicios
+    secondary_goals: [],  // NO existe en backend
+    intensity_level: 'moderate',  // NO existe en backend
+    warm_up_notes: '',  // NO existe en backend
+    cool_down_notes: '',  // NO existe en backend
+    progression_notes: '',  // NO existe en backend
+    variations: [],  // NO existe en backend
+    prerequisites: [],  // NO existe en backend
+    contraindications: [],  // NO existe en backend
+    
+    // Ejercicios con sets transformados
     exercises: template.exercises?.map((exercise: any) => ({
       ...exercise,
+      // Mapear 'order' del backend a 'display_order' del frontend
+      display_order: exercise.order || exercise.display_order,
       sets: exercise.sets?.map(transformSetData) || []
     })) || []
   };
@@ -46,14 +95,13 @@ function transformTemplateData(template: any): DailyTemplate {
  * Frontend envía: name, difficulty, primary_goal, estimated_duration, tags
  */
 function transformFormDataForBackend(formData: any): any {
+  console.log('🔄 Transformando FormData para backend:', formData);
+  
   // Transformar ejercicios y sets
   const exercises = formData.exercises?.map((exercise: any, index: number) => ({
     exercise_id: exercise.exercise_id,
-    display_order: exercise.display_order || index + 1,
-    super_set_group: exercise.super_set_group || null,
-    rest_between_sets: exercise.rest_between_sets || 60,
+    order: exercise.display_order || exercise.order || index + 1,  // Backend espera 'order'
     notes: exercise.notes || '',
-    modifications: exercise.modifications || '',
     sets: exercise.sets?.map((set: any, setIndex: number) => ({
       set_number: set.set_number || setIndex + 1,
       reps_min: set.reps_min || set.reps || 0,
@@ -70,35 +118,22 @@ function transformFormDataForBackend(formData: any): any {
     })) || []
   })) || [];
 
-  return {
-    // Campos básicos - Mapeo frontend → backend
-    title: formData.name,  // Backend usa 'title'
-    description: formData.description || '',
-    estimated_duration_min: formData.estimated_duration || 60,  // Backend usa 'estimated_duration_min'
-    level: formData.difficulty || 'intermediate',  // Backend usa 'level'
-    goal: formData.primary_goal || 'hypertrophy',  // Backend usa 'goal'
-    tags: Array.isArray(formData.tags) ? formData.tags : [],  // Backend usa array de strings
-    
-    // Campos de configuración
-    target_muscle_groups: formData.target_muscle_groups || [],
-    equipment_needed: formData.equipment_needed || [],
-    secondary_goals: formData.secondary_goals || [],
-    intensity_level: formData.intensity_level || 'moderate',
-    
-    // Campos adicionales
-    warm_up_notes: formData.warm_up_notes || '',
-    cool_down_notes: formData.cool_down_notes || '',
-    progression_notes: formData.progression_notes || '',
-    variations: formData.variations || [],
-    prerequisites: formData.prerequisites || [],
-    contraindications: formData.contraindications || [],
-    
-    // Visibilidad
+  // ✅ SOLO ENVIAR CAMPOS QUE EXISTEN EN EL BACKEND
+  const backendData = {
+    // Campos básicos que SÍ existen en backend:
+    title: formData.name,  // Backend espera 'title'
+    estimated_duration_min: formData.estimated_duration || 60,
+    level: formData.difficulty || 'intermediate',
+    goal: formData.primary_goal || 'hypertrophy',
+    tags: Array.isArray(formData.tags) ? formData.tags : [],
     is_public: formData.is_public || false,
     
     // Ejercicios transformados
     exercises: exercises,
   };
+  
+  console.log('✅ Datos transformados para backend:', backendData);
+  return backendData;
 }
 
 const TEMPLATE_ENDPOINTS = {
@@ -196,8 +231,25 @@ export const templateService = {
   async getTemplate(id: number): Promise<DailyTemplate> {
     try {
       const response = await apiClient.get(TEMPLATE_ENDPOINTS.show(id));
-      return transformTemplateData(response.data);
+      
+      console.log('📥 getTemplate response:', response);
+      
+      // La API puede devolver los datos directamente o con wrapper
+      let rawTemplate;
+      if ('id' in response && 'title' in response) {
+        // Los datos están directamente en response
+        rawTemplate = response;
+      } else if (response.data) {
+        // Los datos están en response.data
+        rawTemplate = response.data;
+      } else {
+        throw new Error('Formato de respuesta no válido');
+      }
+      
+      console.log('✅ rawTemplate:', rawTemplate);
+      return transformTemplateData(rawTemplate);
     } catch (error: any) {
+      console.error('❌ Error in getTemplate:', error);
       throw error;
     }
   },
@@ -217,8 +269,22 @@ export const templateService = {
         }
       });
       
-      return transformTemplateData(response.data);
+      console.log('📥 getTemplateWithExercises response:', response);
+      
+      // La API puede devolver los datos directamente o con wrapper
+      let rawTemplate;
+      if ('id' in response && 'title' in response) {
+        rawTemplate = response;
+      } else if (response.data) {
+        rawTemplate = response.data;
+      } else {
+        throw new Error('Formato de respuesta no válido');
+      }
+      
+      console.log('✅ rawTemplate with exercises:', rawTemplate);
+      return transformTemplateData(rawTemplate);
     } catch (error: any) {
+      console.error('❌ Error in getTemplateWithExercises:', error);
       throw error;
     }
   },
@@ -234,9 +300,20 @@ export const templateService = {
       
       const response = await apiClient.post(TEMPLATE_ENDPOINTS.create, transformedData);
       
-      // La respuesta de apiClient.post ya viene sin el wrapper .data gracias al interceptor
-      // response es directamente el objeto de datos del backend
-      return transformTemplateData(response);
+      console.log('📥 createTemplate response:', response);
+      
+      // La API puede devolver los datos directamente o con wrapper
+      let rawTemplate;
+      if ('id' in response && 'title' in response) {
+        rawTemplate = response;
+      } else if (response.data) {
+        rawTemplate = response.data;
+      } else {
+        throw new Error('Formato de respuesta no válido');
+      }
+      
+      console.log('✅ rawTemplate created:', rawTemplate);
+      return transformTemplateData(rawTemplate);
     } catch (error: any) {
       if (error.response?.status === 422) {
         const validationErrors = error.response.data?.errors || error.response.data?.message;
@@ -257,8 +334,20 @@ export const templateService = {
       
       const response = await apiClient.put(TEMPLATE_ENDPOINTS.update(id), transformedData);
       
-      // Transformar respuesta del backend al formato del frontend
-      return transformTemplateData(response.data);
+      console.log('📥 updateTemplate response:', response);
+      
+      // La API puede devolver los datos directamente o con wrapper
+      let rawTemplate;
+      if ('id' in response && 'title' in response) {
+        rawTemplate = response;
+      } else if (response.data) {
+        rawTemplate = response.data;
+      } else {
+        throw new Error('Formato de respuesta no válido');
+      }
+      
+      console.log('✅ rawTemplate updated:', rawTemplate);
+      return transformTemplateData(rawTemplate);
     } catch (error: any) {
       if (error.response?.status === 422) {
         const validationErrors = error.response.data?.errors || error.response.data?.message;
@@ -285,7 +374,21 @@ export const templateService = {
   async duplicateTemplate(id: number): Promise<DailyTemplate> {
     try {
       const response = await apiClient.post(TEMPLATE_ENDPOINTS.duplicate(id));
-      return response.data;
+      
+      console.log('📥 duplicateTemplate response:', response);
+      
+      // La API puede devolver los datos directamente o con wrapper
+      let rawTemplate;
+      if ('id' in response && 'title' in response) {
+        rawTemplate = response;
+      } else if (response.data) {
+        rawTemplate = response.data;
+      } else {
+        throw new Error('Formato de respuesta no válido');
+      }
+      
+      console.log('✅ rawTemplate duplicated:', rawTemplate);
+      return transformTemplateData(rawTemplate);
     } catch (error: any) {
       throw error;
     }

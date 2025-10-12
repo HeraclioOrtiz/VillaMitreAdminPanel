@@ -35,9 +35,9 @@ export const useTemplates = (params: TemplateQueryParams = {}, options?: { enabl
     queryKey,
     queryFn,
     enabled: options?.enabled !== false, // Por defecto habilitado, solo deshabilitar si se pasa false
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    gcTime: 10 * 60 * 1000, // 10 minutos (reemplaza cacheTime deprecated)
-    refetchOnWindowFocus: false, // Evitar refetch innecesarios
+    staleTime: 30 * 1000, // 30 segundos (reducido para actualizaciones más frecuentes)
+    gcTime: 2 * 60 * 1000, // 2 minutos
+    refetchOnWindowFocus: true, // Refetch al volver a la ventana para sincronización
     placeholderData: (previousData) => previousData, // Para paginación suave
     retry: (failureCount, error: any) => {
       // No retry para errores 4xx del cliente
@@ -118,13 +118,26 @@ export const useCreateTemplate = (options?: {
   return useMutation({
     mutationFn: (data: TemplateFormData) => templateService.createTemplate(data),
     onSuccess: async (template: DailyTemplate) => {
-      // Invalidar y refetch inmediato de todas las listas
-      await queryClient.invalidateQueries({ 
-        queryKey: templateKeys.lists(),
-        refetchType: 'active'
-      });
+      // 1. Actualización optimista: agregar a las listas en cache
+      queryClient.setQueriesData(
+        { queryKey: templateKeys.lists() },
+        (oldData: TemplateListResponse | undefined) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            data: [template, ...oldData.data], // Agregar al inicio
+            meta: oldData.meta ? {
+              ...oldData.meta,
+              total: oldData.meta.total + 1,
+            } : oldData.meta,
+          };
+        }
+      );
       
-      // Invalidar estadísticas
+      // 2. Invalidar para refetch en background
+      queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
+      
+      // 3. Invalidar estadísticas
       queryClient.invalidateQueries({ queryKey: templateKeys.stats() });
       
       options?.onSuccess?.(template);
@@ -148,19 +161,30 @@ export const useUpdateTemplate = (options?: {
     mutationFn: ({ id, data }: { id: number; data: TemplateFormData }) =>
       templateService.updateTemplate(id, data),
     onSuccess: async (updatedTemplate) => {
-      // Actualizar el detalle específico primero
+      // 1. Actualizar el detalle específico en cache
       queryClient.setQueryData(
         templateKeys.detail(updatedTemplate.id),
         updatedTemplate
       );
       
-      // Invalidar y refetch inmediato de listas
-      await queryClient.invalidateQueries({ 
-        queryKey: templateKeys.lists(),
-        refetchType: 'active'
-      });
+      // 2. Actualización optimista: actualizar todas las listas en cache
+      queryClient.setQueriesData(
+        { queryKey: templateKeys.lists() },
+        (oldData: TemplateListResponse | undefined) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            data: oldData.data.map((template) =>
+              template.id === updatedTemplate.id ? updatedTemplate : template
+            ),
+          };
+        }
+      );
       
-      // Invalidar estadísticas
+      // 3. Invalidar para refetch en background
+      queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
+      
+      // 4. Invalidar estadísticas
       queryClient.invalidateQueries({ queryKey: templateKeys.stats() });
       
       options?.onSuccess?.(updatedTemplate);
@@ -183,16 +207,29 @@ export const useDeleteTemplate = (options?: {
   return useMutation({
     mutationFn: (id: number) => templateService.deleteTemplate(id),
     onSuccess: async (_, deletedId) => {
-      // Invalidar y refetch inmediato de todas las listas
-      await queryClient.invalidateQueries({ 
-        queryKey: templateKeys.lists(),
-        refetchType: 'active' // Refetch de queries activas inmediatamente
-      });
+      // 1. Actualización optimista: remover de las listas en cache
+      queryClient.setQueriesData(
+        { queryKey: templateKeys.lists() },
+        (oldData: TemplateListResponse | undefined) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            data: oldData.data.filter((template) => template.id !== deletedId),
+            meta: oldData.meta ? {
+              ...oldData.meta,
+              total: oldData.meta.total - 1,
+            } : oldData.meta,
+          };
+        }
+      );
       
-      // Remover el detalle específico del cache
+      // 2. Remover el detalle específico del cache
       queryClient.removeQueries({ queryKey: templateKeys.detail(deletedId) });
       
-      // Invalidar estadísticas y recomendaciones
+      // 3. Invalidar para refetch en background
+      queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
+      
+      // 4. Invalidar estadísticas y recomendaciones
       queryClient.invalidateQueries({ queryKey: templateKeys.stats() });
       queryClient.invalidateQueries({ queryKey: templateKeys.recommended() });
       
@@ -216,13 +253,26 @@ export const useDuplicateTemplate = (options?: {
   return useMutation({
     mutationFn: (id: number) => templateService.duplicateTemplate(id),
     onSuccess: async (duplicatedTemplate) => {
-      // Invalidar y refetch inmediato de todas las listas para mostrar la plantilla duplicada
-      await queryClient.invalidateQueries({ 
-        queryKey: templateKeys.lists(),
-        refetchType: 'active'
-      });
+      // 1. Actualización optimista: agregar duplicado a las listas en cache
+      queryClient.setQueriesData(
+        { queryKey: templateKeys.lists() },
+        (oldData: TemplateListResponse | undefined) => {
+          if (!oldData) return oldData;
+          return {
+            ...oldData,
+            data: [duplicatedTemplate, ...oldData.data], // Agregar al inicio
+            meta: oldData.meta ? {
+              ...oldData.meta,
+              total: oldData.meta.total + 1,
+            } : oldData.meta,
+          };
+        }
+      );
       
-      // Invalidar estadísticas
+      // 2. Invalidar para refetch en background
+      queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
+      
+      // 3. Invalidar estadísticas
       queryClient.invalidateQueries({ queryKey: templateKeys.stats() });
       
       options?.onSuccess?.(duplicatedTemplate);

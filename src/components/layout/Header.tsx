@@ -2,10 +2,8 @@ import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui';
 import {
-  BellIcon,
   Bars3Icon,
   MagnifyingGlassIcon,
-  UserCircleIcon,
   ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 
@@ -63,15 +61,6 @@ const Header = ({ onMenuClick, showMenuButton = false }: HeaderProps) => {
 
         {/* Right side */}
         <div className="flex items-center space-x-4">
-          {/* Notifications */}
-          <button
-            type="button"
-            className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-villa-mitre-500"
-          >
-            <span className="sr-only">Ver notificaciones</span>
-            <BellIcon className="h-6 w-6" aria-hidden="true" />
-          </button>
-
           {/* User menu */}
           <div className="relative">
             <button
@@ -105,14 +94,6 @@ const Header = ({ onMenuClick, showMenuButton = false }: HeaderProps) => {
                        user?.is_professor ? 'Profesor' : 'Usuario'}
                     </p>
                   </div>
-                  
-                  <button
-                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => setShowUserMenu(false)}
-                  >
-                    <UserCircleIcon className="mr-3 h-5 w-5 text-gray-400" />
-                    Mi Perfil
-                  </button>
                   
                   <button
                     className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"

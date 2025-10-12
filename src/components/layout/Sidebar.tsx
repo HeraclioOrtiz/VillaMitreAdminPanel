@@ -43,7 +43,7 @@ const Sidebar = () => {
 
   // Navegación para profesores - Panel de Asignaciones (Gestión de estudiantes)
   const professorNavigation: NavigationItem[] = [
-    { name: 'Mis Estudiantes', href: '/professor/dashboard', icon: AcademicCapIcon },
+    { name: 'Mis Estudiantes', href: '/professor/students', icon: AcademicCapIcon },
   ];
 
   // Navegación para administradores - Panel de Administración (Gestión del sistema)
@@ -85,8 +85,12 @@ const Sidebar = () => {
     <div className="flex flex-col w-64 bg-white border-r border-gray-200 pt-5 pb-4 overflow-y-auto">
       {/* Logo */}
       <div className="flex items-center flex-shrink-0 px-4">
-        <div className="w-8 h-8 bg-villa-mitre-600 rounded-lg flex items-center justify-center">
-          <span className="text-white font-bold text-sm">VM</span>
+        <div className="w-10 h-10 bg-gray-900 rounded-lg flex items-center justify-center p-1.5">
+          <img 
+            src="/cvm-escudo-para-fondo-negro.png" 
+            alt="Villa Mitre" 
+            className="w-full h-full object-contain"
+          />
         </div>
         <div className="ml-3">
           <h1 className="text-lg font-semibold text-gray-900">Villa Mitre</h1>

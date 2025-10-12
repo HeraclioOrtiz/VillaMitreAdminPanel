@@ -9,13 +9,15 @@ export { default as ExerciseSelector } from './ExerciseSelector';
 export { default as TemplateCard } from './TemplateCard';
 export { default as TemplateGrid } from './TemplateGrid';
 export { default as TemplatePreview } from './TemplatePreview';
+export { default as DeleteExerciseModal } from './DeleteExerciseModal';
+export { default as BulkDeleteExercisesModal } from './BulkDeleteExercisesModal';
+export { default as QuickEditSetModal } from './QuickEditSetModal';
 export { default as TemplateBasicInfoStep } from './TemplateBasicInfoStep';
 export { default as TemplateExerciseStep } from './TemplateExerciseStep';
 export { default as TemplateSetsStep } from './TemplateSetsStep';
 
 // Set components
 export { default as SetEditor } from './SetEditor';
-
 // Re-export types (only if they exist)
 // export type { ExerciseCardProps } from './ExerciseCard';
 // export type { ExerciseTableProps } from './ExerciseTable';

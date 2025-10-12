@@ -26,13 +26,11 @@ export interface TemplateSet {
 export interface TemplateExercise {
   id: number;
   exercise_id: number;
-  display_order: number; // Orden dentro de la plantilla (backend usa display_order)
+  display_order: number; // Orden dentro de la plantilla (frontend usa display_order, backend espera 'order')
+  order?: number; // Alias para compatibilidad con backend
   exercise: Exercise; // Información completa del ejercicio (siempre incluida)
   sets: TemplateSet[]; // Series configuradas
-  super_set_group?: string; // Agrupación para superseries
-  rest_between_sets?: number; // Descanso entre series en segundos
   notes?: string;
-  modifications?: string; // Modificaciones específicas para este ejercicio
 }
 
 // ✅ COMPATIBILIDAD: Mantener SetConfiguration para formularios - ACTUALIZADO 2025-10-06
@@ -68,7 +66,8 @@ export interface DailyTemplate {
   // ✅ COMPATIBILIDAD: Propiedades opcionales para frontend
   name?: string; // Alias para title
   difficulty?: 'beginner' | 'intermediate' | 'advanced'; // Alias para level
-  primary_goal?: string; // Alias para goal
+  estimated_duration?: number; // Alias para estimated_duration_min
+  primary_goal?: 'strength' | 'hypertrophy' | 'endurance' | 'power' | 'flexibility' | 'cardio' | 'general'; // Alias para goal
   target_muscle_groups?: string[]; // Calculado desde ejercicios
   equipment_needed?: string[]; // Calculado desde ejercicios
   secondary_goals?: string[];
@@ -81,6 +80,7 @@ export interface DailyTemplate {
   
   // Metadatos
   is_public?: boolean; // Si otros profesores pueden verla
+  is_preset?: boolean; // Si es una plantilla predefinida del sistema
   is_favorite?: boolean; // Marcada como favorita por el usuario
   popularity_score?: number; // Puntuación de popularidad
   usage_count?: number; // Veces que se ha usado
@@ -123,7 +123,7 @@ export interface TemplateFormData {
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   target_muscle_groups: string[];
   equipment_needed: string[];
-  primary_goal: 'strength' | 'hypertrophy' | 'endurance' | 'power' | 'flexibility' | 'cardio';
+  primary_goal: 'strength' | 'hypertrophy' | 'endurance' | 'power' | 'flexibility' | 'cardio' | 'general';
   secondary_goals?: string[];
   intensity_level: 'low' | 'moderate' | 'high' | 'very_high';
   exercises: Omit<TemplateExercise, 'id'>[];
@@ -196,6 +196,7 @@ export const PRIMARY_GOALS = [
   { value: 'power', label: 'Potencia' },
   { value: 'flexibility', label: 'Flexibilidad' },
   { value: 'cardio', label: 'Cardiovascular' },
+  { value: 'general', label: 'General' },
 ] as const;
 
 export const INTENSITY_LEVELS = [

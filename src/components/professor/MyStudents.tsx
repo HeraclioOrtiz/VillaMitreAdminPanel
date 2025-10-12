@@ -22,9 +22,10 @@ import {
   CheckCircleIcon,
   ExclamationTriangleIcon,
 } from '@heroicons/react/24/solid';
+import { TrashIcon } from '@heroicons/react/24/outline';
 import type { ProfessorStudentAssignment, TemplateAssignment } from '@/types/assignment';
-import { useProfessorStudents } from '@/hooks/useAssignments';
-import { Button, Badge, Skeleton, EmptyState } from '@/components/ui';
+import { useProfessorStudents, useUnassignTemplate } from '@/hooks/useAssignments';
+import { Button, Badge, Skeleton, EmptyState, useToast } from '@/components/ui';
 import { formatDate, formatDistanceToNow } from '@/utils/date';
 
 interface MyStudentsProps {
@@ -38,7 +39,8 @@ interface MyStudentsProps {
  */
 const AssignedTemplateCard = memo<{
   templateAssignment: TemplateAssignment;
-}>(function AssignedTemplateCard({ templateAssignment }) {
+  onUnassign?: (id: number) => void;
+}>(function AssignedTemplateCard({ templateAssignment, onUnassign }) {
   const { daily_template, frequency, start_date, end_date, status, professor_notes } = templateAssignment;
   
   // Función para obtener el color del nivel
@@ -157,6 +159,19 @@ const AssignedTemplateCard = memo<{
           <div className="line-clamp-2">{professor_notes}</div>
         </div>
       )}
+
+      {/* Botón de desasignar */}
+      {onUnassign && (
+        <div className="mt-3 pt-3 border-t border-gray-200">
+          <button
+            onClick={() => onUnassign(templateAssignment.id)}
+            className="w-full flex items-center justify-center space-x-1 px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
+          >
+            <TrashIcon className="h-3 w-3" />
+            <span>Desasignar Plantilla</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 });
@@ -167,7 +182,8 @@ const AssignedTemplateCard = memo<{
 const AssignedTemplatesSection = memo<{
   templateAssignments: TemplateAssignment[];
   totalTemplates: number;
-}>(function AssignedTemplatesSection({ templateAssignments, totalTemplates }) {
+  onUnassign?: (id: number) => void;
+}>(function AssignedTemplatesSection({ templateAssignments, totalTemplates, onUnassign }) {
   const [isExpanded, setIsExpanded] = useState(false);
   
   if (templateAssignments.length === 0) {
@@ -231,7 +247,8 @@ const AssignedTemplatesSection = memo<{
             {templateAssignments.map((templateAssignment) => (
               <AssignedTemplateCard 
                 key={templateAssignment.id} 
-                templateAssignment={templateAssignment} 
+                templateAssignment={templateAssignment}
+                onUnassign={onUnassign}
               />
             ))}
           </div>
@@ -262,11 +279,13 @@ const StudentCard = memo<{
   onAssignTemplate?: (student: ProfessorStudentAssignment) => void;
   onViewProgress?: (student: ProfessorStudentAssignment) => void;
   onViewCalendar?: (student: ProfessorStudentAssignment) => void;
+  onUnassignTemplate?: (templateAssignmentId: number) => void;
 }>(function StudentCard({ 
   assignment, 
   onAssignTemplate, 
   onViewProgress, 
-  onViewCalendar 
+  onViewCalendar,
+  onUnassignTemplate
 }) {
   const { student } = assignment;
   
@@ -407,6 +426,7 @@ const StudentCard = memo<{
         <AssignedTemplatesSection 
           templateAssignments={assignment.template_assignments || []}
           totalTemplates={totalTemplates}
+          onUnassign={onUnassignTemplate}
         />
         
         {/* Fila de acciones */}
@@ -514,6 +534,8 @@ export const MyStudents: React.FC<MyStudentsProps> = memo(function MyStudents({
   onViewProgress,
   onViewCalendar,
 }) {
+  const toast = useToast();
+  
   // Query
   const { 
     data: studentsResponse, 
@@ -522,10 +544,35 @@ export const MyStudents: React.FC<MyStudentsProps> = memo(function MyStudents({
     refetch 
   } = useProfessorStudents();
 
+  // Mutación para desasignar plantilla
+  const unassignMutation = useUnassignTemplate({
+    onSuccess: (deletedId) => {
+      toast.success(
+        'Plantilla desasignada',
+        'La plantilla se desasignó correctamente del estudiante'
+      );
+      refetch(); // Recargar datos
+    },
+    onError: (error: any) => {
+      toast.error(
+        'Error al desasignar',
+        error.message || 'No se pudo desasignar la plantilla'
+      );
+    },
+  });
+
   // Debug logs removidos - sistema funcionando correctamente
 
   // Estados locales
   const [filter, setFilter] = useState<'all' | 'active' | 'paused'>('all');
+  
+  // Handler para desasignar plantilla
+  const handleUnassignTemplate = useCallback(async (templateAssignmentId: number) => {
+    const confirmed = window.confirm('¿Estás seguro de que deseas desasignar esta plantilla del estudiante?');
+    if (!confirmed) return;
+    
+    await unassignMutation.mutateAsync(templateAssignmentId);
+  }, [unassignMutation]);
 
   // Filtrar estudiantes
   const filteredStudents = useMemo(() => {
@@ -668,6 +715,7 @@ export const MyStudents: React.FC<MyStudentsProps> = memo(function MyStudents({
               onAssignTemplate={onAssignTemplate}
               onViewProgress={onViewProgress}
               onViewCalendar={onViewCalendar}
+              onUnassignTemplate={handleUnassignTemplate}
             />
           ))}
         </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import SetEditor from './SetEditor';
 import TemplatePreview from './TemplatePreview';
 import { Button } from '@/components/ui';
@@ -51,16 +51,22 @@ const TemplateSetsStep = ({
   const initialExercises = getExercises();
   const [exercises, setExercises] = useState<any[]>(initialExercises);
 
-  // Sincronizar con datos externos cuando cambian
+  // Sincronizar con datos externos cuando cambian - SIEMPRE sincronizar
   useEffect(() => {
     const newExercises = getExercises();
-    if (newExercises.length > 0 && newExercises.length !== exercises.length) {
+    console.log('📝 TemplateSetsStep: Datos recibidos:', data);
+    console.log('📝 TemplateSetsStep: Ejercicios actuales en state:', exercises.length);
+    console.log('📝 TemplateSetsStep: Nuevos ejercicios del paso 2:', newExercises.length);
+    
+    // Sincronizar si hay diferencia en la cantidad o si no tenemos ejercicios
+    if (newExercises.length !== exercises.length || exercises.length === 0) {
+      console.log('🔄 TemplateSetsStep: Actualizando ejercicios');
       setExercises(newExercises);
     }
-  }, [data.exercises]);
+  }, [JSON.stringify(getExercises().map(e => e.exercise_id))]); // Depender de los IDs de ejercicios
 
   // Validate step
-  const validateStep = () => {
+  const validateStep = useCallback(() => {
     const hasExercises = exercises.length > 0;
     const allExercisesHaveSets = exercises.every(exercise => 
       exercise.sets && exercise.sets.length > 0
@@ -69,15 +75,19 @@ const TemplateSetsStep = ({
     
     onValidationChange?.(isValid);
     return isValid;
-  };
+  }, [exercises, onValidationChange]);
 
-  // Update parent data when exercises change
+  // Update parent data when exercises change - evitar loops
   useEffect(() => {
-    onDataChange({
-      exercises: exercises,
-    });
-    validateStep();
-  }, [exercises]);
+    // Solo notificar cuando hay datos válidos
+    if (exercises.length >= 0) {
+      onDataChange({
+        exercises: exercises,
+      });
+      validateStep();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exercises]); // Solo exercises
 
   // Update sets for specific exercise
   const updateExerciseSets = (exerciseIndex: number, sets: any[]) => {

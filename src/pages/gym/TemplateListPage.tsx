@@ -7,10 +7,8 @@ import { useDeleteTemplate, useDuplicateTemplate } from '@/hooks/useTemplates';
 import type { DailyTemplate } from '@/types/template';
 import {
   ArrowLeftIcon,
-  PlusIcon,
   DocumentTextIcon,
-  ChartBarIcon,
-  Cog6ToothIcon,
+  PlusIcon,
 } from '@heroicons/react/24/outline';
 
 const TemplateListPage = () => {
@@ -121,33 +119,6 @@ const TemplateListPage = () => {
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center space-x-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/gym/reports/templates')}
-                leftIcon={<ChartBarIcon className="w-4 h-4" />}
-              >
-                Reportes
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/gym/settings/templates')}
-                leftIcon={<Cog6ToothIcon className="w-4 h-4" />}
-              >
-                Configuración
-              </Button>
-              
-              <Button
-                onClick={handleCreateNew}
-                leftIcon={<PlusIcon className="w-4 h-4" />}
-              >
-                Nueva Plantilla
-              </Button>
-            </div>
           </div>
         </div>
       </div>

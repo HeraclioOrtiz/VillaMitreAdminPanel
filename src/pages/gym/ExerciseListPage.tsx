@@ -1,5 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   Button, 
   useToast, 
@@ -11,18 +12,24 @@ import {
 import ExerciseTable from '@/components/gym/ExerciseTable';
 import ExerciseFilters from '@/components/gym/ExerciseFilters';
 import ExercisePreviewModal from '@/components/gym/ExercisePreviewModal';
-import { useExercises, useBulkDeleteExercises, useDuplicateExercise, useDeleteExercise, useExportExercises } from '@/hooks/useExercises';
+import DeleteExerciseModal from '@/components/gym/DeleteExerciseModal';
+import BulkDeleteExercisesModal from '@/components/gym/BulkDeleteExercisesModal';
+import { useExercises, useBulkDeleteExercises, useDuplicateExercise, useDeleteExercise } from '@/hooks/useExercises';
+import { exerciseService } from '@/services/exercise';
 import type { ExerciseFilters as ExerciseFiltersType, Exercise, ExerciseListResponse } from '@/types/exercise';
 import {
   PlusIcon,
   TrashIcon,
-  ArrowDownTrayIcon,
   FunnelIcon,
 } from '@heroicons/react/24/outline';
 
 const ExerciseListPage = () => {
   const navigate = useNavigate();
   const toast = useToast();
+  const { user } = useAuth();
+  
+  // Verificar si el usuario es administrador (para eliminación forzada)
+  const isAdmin = user?.is_admin || user?.is_super_admin;
   
   // Estados locales
   const [filters, setFilters] = useState<ExerciseFiltersType>({
@@ -43,6 +50,9 @@ const ExerciseListPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [previewExercise, setPreviewExercise] = useState<Exercise | null>(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [exerciseToDelete, setExerciseToDelete] = useState<Exercise | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
   const [loadingStates, setLoadingStates] = useState({
     duplicating: [] as number[],
     deleting: [] as number[],
@@ -197,8 +207,6 @@ const ExerciseListPage = () => {
     },
   });
 
-  const exportMutation = useExportExercises();
-
   // Handlers
   const handleFiltersChange = (newFilters: ExerciseFiltersType) => {
     setFilters(newFilters);
@@ -253,51 +261,103 @@ const ExerciseListPage = () => {
   };
 
   const handleDelete = async (exercise: Exercise) => {
-    if (window.confirm(`¿Estás seguro de que quieres eliminar "${exercise.name}"?`)) {
-      // Agregar al estado de carga
+    // Abrir modal de confirmación con verificación de dependencias
+    setExerciseToDelete(exercise);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!exerciseToDelete) return;
+
+    // Agregar al estado de carga
+    setLoadingStates(prev => ({
+      ...prev,
+      deleting: [...prev.deleting, exerciseToDelete.id]
+    }));
+
+    try {
+      await deleteMutation.mutateAsync(exerciseToDelete.id);
+      toast.success(
+        'Ejercicio eliminado',
+        `El ejercicio "${exerciseToDelete.name}" se eliminó correctamente`
+      );
+      
+      // Cerrar modal solo después del éxito
+      setShowDeleteModal(false);
+      setExerciseToDelete(null);
+    } catch (error) {
+      // El error ya se maneja en el callback del hook
+      // No cerramos el modal en caso de error para que el usuario vea qué pasó
+    } finally {
+      // Remover del estado de carga
       setLoadingStates(prev => ({
         ...prev,
-        deleting: [...prev.deleting, exercise.id]
+        deleting: prev.deleting.filter(id => id !== exerciseToDelete.id)
       }));
-
-      try {
-        await deleteMutation.mutateAsync(exercise.id);
-      } catch (error) {
-        // El error ya se maneja en el callback del hook
-      } finally {
-        // Remover del estado de carga
-        setLoadingStates(prev => ({
-          ...prev,
-          deleting: prev.deleting.filter(id => id !== exercise.id)
-        }));
-      }
     }
   };
 
-  const handleBulkDelete = async () => {
+  const handleForceDelete = async (exercise: Exercise) => {
+    // Agregar al estado de carga
+    setLoadingStates(prev => ({
+      ...prev,
+      deleting: [...prev.deleting, exercise.id]
+    }));
+
+    try {
+      const result = await exerciseService.deleteExerciseForce(exercise.id);
+      
+      toast.success(
+        'Ejercicio eliminado',
+        result.message
+      );
+
+      if (result.warning) {
+        setTimeout(() => {
+          toast.warning(
+            'Plantillas eliminadas',
+            result.warning
+          );
+        }, 500);
+      }
+
+      // Refetch para actualizar la lista
+      queryResult.refetch();
+      
+      // Cerrar modal solo después del éxito
+      setShowDeleteModal(false);
+      setExerciseToDelete(null);
+    } catch (error: any) {
+      toast.error(
+        'Error al eliminar ejercicio',
+        error.message || 'No se pudo eliminar el ejercicio'
+      );
+      // No cerramos el modal en caso de error
+    } finally {
+      // Remover del estado de carga
+      setLoadingStates(prev => ({
+        ...prev,
+        deleting: prev.deleting.filter(id => id !== exercise.id)
+      }));
+    }
+  };
+
+  const handleBulkDelete = () => {
     if (selectedRowKeys.length === 0) return;
     
-    if (window.confirm(`¿Estás seguro de que quieres eliminar ${selectedRowKeys.length} ejercicio(s)?`)) {
-      try {
-        await bulkDeleteMutation.mutateAsync(selectedRowKeys as number[]);
-      } catch (error) {
-        // El error ya se maneja en el callback del hook
-      }
-    }
+    // Abrir modal de confirmación con verificación de dependencias
+    setShowBulkDeleteModal(true);
   };
 
-  const handleExport = async () => {
+  const handleConfirmBulkDelete = async () => {
     try {
-      await exportMutation.mutateAsync(queryParams);
-      toast.success(
-        'Exportación completada',
-        'Los ejercicios se han exportado correctamente'
-      );
+      await bulkDeleteMutation.mutateAsync(selectedRowKeys as number[]);
+      
+      // Cerrar modal solo después del éxito
+      setShowBulkDeleteModal(false);
     } catch (error) {
-      toast.error(
-        'Error al exportar',
-        'No se pudieron exportar los ejercicios'
-      );
+      // El error ya se maneja en el callback del hook
+      // No cerramos el modal en caso de error
     }
   };
 
@@ -444,16 +504,6 @@ const ExerciseListPage = () => {
           </Button>
           
           <Button
-            variant="secondary"
-            onClick={handleExport}
-            leftIcon={<ArrowDownTrayIcon className="w-4 h-4" />}
-            disabled={exportMutation.isPending}
-            isLoading={exportMutation.isPending}
-          >
-            {exportMutation.isPending ? 'Exportando...' : 'Exportar'}
-          </Button>
-          
-          <Button
             variant="primary"
             onClick={handleCreateNew}
             leftIcon={<PlusIcon className="w-4 h-4" />}
@@ -528,6 +578,35 @@ const ExerciseListPage = () => {
         onDuplicate={handleDuplicate}
         onDelete={handleDelete}
       />
+
+      {/* Modal de confirmación de eliminación con verificación de dependencias */}
+      {exerciseToDelete && (
+        <DeleteExerciseModal
+          exercise={exerciseToDelete}
+          isOpen={showDeleteModal}
+          onClose={() => {
+            setShowDeleteModal(false);
+            setExerciseToDelete(null);
+          }}
+          onConfirm={handleConfirmDelete}
+          onForceDelete={isAdmin ? handleForceDelete : undefined}
+        />
+      )}
+
+      {/* Modal de eliminación masiva con verificación de dependencias */}
+      {selectedRowKeys.length > 0 && (
+        <BulkDeleteExercisesModal
+          exerciseIds={selectedRowKeys as number[]}
+          exerciseNames={
+            exercisesData?.data
+              ?.filter(ex => selectedRowKeys.includes(ex.id))
+              .map(ex => ex.name) || []
+          }
+          isOpen={showBulkDeleteModal}
+          onClose={() => setShowBulkDeleteModal(false)}
+          onConfirm={handleConfirmBulkDelete}
+        />
+      )}
     </div>
   );
 };

@@ -27,7 +27,7 @@ import { useToast } from '@/hooks/useToast';
 import { Modal, Button, FormField, Input, Select, TextArea, Checkbox, Skeleton } from '@/components/ui';
 import { formatDate } from '@/utils/date';
 
-// Días de la semana
+// Días de la semana (0=Domingo, 1=Lunes, ... 6=Sábado) según backend
 const WEEK_DAYS = [
   { value: 1, label: 'Lunes', short: 'L' },
   { value: 2, label: 'Martes', short: 'M' },
@@ -35,7 +35,7 @@ const WEEK_DAYS = [
   { value: 4, label: 'Jueves', short: 'J' },
   { value: 5, label: 'Viernes', short: 'V' },
   { value: 6, label: 'Sábado', short: 'S' },
-  { value: 7, label: 'Domingo', short: 'D' },
+  { value: 0, label: 'Domingo', short: 'D' },
 ] as const;
 
 // Schema de validación
@@ -44,7 +44,7 @@ const assignTemplateSchema = z.object({
     required_error: 'Debe seleccionar una plantilla',
   }).min(1, 'Debe seleccionar una plantilla válida'),
   
-  frequency: z.array(z.number().min(1).max(7))
+  frequency: z.array(z.number().min(0).max(6))
     .min(1, 'Debe seleccionar al menos un día de la semana')
     .max(7, 'No puede seleccionar más de 7 días'),
   
